@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <cmyth_local.h>
 
-#include <mvp_debug.h>
+#include <debug.h>
 
 static cmyth_debug_ctx_t cmyth_debug_ctx = CMYTH_DEBUG_CTX_INIT("cmyth",
 								CMYTH_DBG_NONE,

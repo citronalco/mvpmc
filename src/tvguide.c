@@ -36,7 +36,7 @@
 #include <mvp_widget.h>
 #include <mvp_av.h>
 #include <ts_demux.h>
-#include <mvp_refmem.h>
+#include <refmem.h>
 
 #include "mvpmc.h"
 #include "mythtv.h"

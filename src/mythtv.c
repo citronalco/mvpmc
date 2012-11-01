@@ -36,8 +36,8 @@
 #include <mvp_av.h>
 #include <mvp_demux.h>
 #include <mvp_string.h>
-#include <mvp_refmem.h>
-#include <mvp_atomic.h>
+#include <refmem.h>
+#include <atomic.h>
 #include <cmyth.h>
 
 #include "mvpmc.h"

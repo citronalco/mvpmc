@@ -25,10 +25,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <mvp_refmem.h>
+#include <refmem.h>
 #include <refmem_local.h>
 
-#include "mvp_debug.h"
+#include "debug.h"
 
 static cmyth_debug_ctx_t refmem_debug_ctx = CMYTH_DEBUG_CTX_INIT("refmem",
 								 REF_DBG_COUNTERS,
