@@ -1832,6 +1832,24 @@ event_start(void *arg)
 			episode_dirty = 1;
 			mvpw_expose(mythtv_browser);
 			break;
+		case CMYTH_EVENT_RECORDING_LIST_CHANGE_ADD:
+			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_ADD: %s\n",buf);
+			/* required to get new recordings listed */
+			episode_dirty = 1;
+			mvpw_expose(mythtv_browser);
+			break;
+		case CMYTH_EVENT_RECORDING_LIST_CHANGE_UPDATE:
+			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_UPDATE: %s\n",buf);
+			/* Seems not to be required. Commented out to avoid unnecessary refreshes */
+			//episode_dirty = 1;
+			//mvpw_expose(mythtv_browser);
+			break;
+		case CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE:
+			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE: %s\n",buf);
+			/* required to remove recordings from listing deleted by other frontends */
+			episode_dirty = 1;
+			mvpw_expose(mythtv_browser);
+			break;
 		case CMYTH_EVENT_SCHEDULE_CHANGE:
 			printf("MythTV event SCHEDULE_CHANGE\n");
 			pending_dirty = 1;
@@ -1846,8 +1864,11 @@ event_start(void *arg)
 			mythtv_shutdown(0);
 			gui_error("Stopping LiveTV to start new recording.");
 			break;
+		case CMYTH_EVENT_WATCH_LIVETV:
+			printf("MythTV event CMYTH_EVENT_WATCH_LIVETV\n");
+			break;
 		case CMYTH_EVENT_LIVETV_CHAIN_UPDATE:
-			printf("MythTV event %s\n",buf);
+			printf("MythTV event LIVETV_CHAIN_UPDATE: %s\n",buf);
 			mythtv_livetv_chain_update(buf);
 			break;
 		case CMYTH_EVENT_SIGNAL:
@@ -1856,33 +1877,14 @@ event_start(void *arg)
 		case CMYTH_EVENT_ASK_RECORDING:
 			printf("MythTV event ASK RECORDING\n");
 			break;
-		/* TODO: Do something sensible with the events below */
-		case CMYTH_EVENT_RECORDING_LIST_CHANGE_ADD:
-			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_ADD\n");
-		/*	episode_dirty = 1;
-			mvpw_expose(mythtv_browser);	*/
-			break;
-		case CMYTH_EVENT_RECORDING_LIST_CHANGE_UPDATE:
-			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_UPDATE\n");
-		/*	episode_dirty = 1;
-			mvpw_expose(mythtv_browser);	*/
-			break;
-		case CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE:
-			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE\n");
-		/*	episode_dirty = 1;
-			mvpw_expose(mythtv_browser);	*/
-			break;
-		case CMYTH_EVENT_WATCH_LIVETV:
-			printf("MythTV event CMYTH_EVENT_WATCH_LIVETV\n");
-			break;
 		case CMYTH_EVENT_SYSTEM_EVENT:
-			printf("MythTV event CMYTH_EVENT_SYSTEM_EVENT\n");
+			printf("MythTV event CMYTH_EVENT_SYSTEM_EVENT: %s\n",buf);
 			break;
 		case CMYTH_EVENT_UPDATE_FILE_SIZE:
-			printf("MythTV event CMYTH_EVENT_UPDATE_FILE_SIZE\n");
+			printf("MythTV event CMYTH_EVENT_UPDATE_FILE_SIZE: %s\n",buf);
 			break;
 		case CMYTH_EVENT_GENERATED_PIXMAP:
-			printf("MythTV event CMYTH_EVENT_GENERATED_PIXMAP\n");
+			printf("MythTV event CMYTH_EVENT_GENERATED_PIXMAP: %s\n",buf);
 			break;
 		case CMYTH_EVENT_CLEAR_SETTINGS_CACHE:
 			printf("MythTV event CMYTH_EVENT_CLEAR_SETTINGS_CACHE\n");
