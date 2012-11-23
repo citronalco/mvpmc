@@ -1012,13 +1012,13 @@ cmyth_livetv_get_block(cmyth_recorder_t rec, char *buf, unsigned long len)
 cmyth_recorder_t
 cmyth_spawn_live_tv(cmyth_recorder_t rec, unsigned buflen, int tcp_rcvbuf,
 										void (*prog_update_callback)(cmyth_proginfo_t),
-										char ** err)
+										char ** err, char* channame)
 {
 	cmyth_recorder_t rtrn = NULL;
 	int i;
 
 	if(rec->rec_conn->conn_version >= 26) {
-		if (cmyth_recorder_spawn_chain_livetv(rec) != 0) {
+		if (cmyth_recorder_spawn_chain_livetv(rec, channame) != 0) {
 			*err = "Spawn livetv failed.";
 			goto err;
 		}
@@ -1049,6 +1049,18 @@ cmyth_spawn_live_tv(cmyth_recorder_t rec, unsigned buflen, int tcp_rcvbuf,
 
 		if (cmyth_recorder_spawn_livetv(rtrn) != 0) {
 			*err = "Spawn livetv failed.";
+			goto err;
+		}
+	}
+
+	if(rtrn->rec_conn->conn_version < 34 && channame) {
+		if (cmyth_recorder_pause(rtrn) != 0) {
+			*err = "Failed to pause recorder to change channel";
+			goto err;
+		}
+
+		if (cmyth_recorder_set_channel(rtrn, channame) != 0) {
+			*err = "Failed to change channel on recorder";
 			goto err;
 		}
 	}

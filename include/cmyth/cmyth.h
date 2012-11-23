@@ -268,18 +268,18 @@ extern cmyth_conn_t cmyth_conn_connect_event(char *server,
 extern cmyth_file_t cmyth_conn_connect_file(cmyth_proginfo_t prog,
 					    cmyth_conn_t control,
 					    unsigned buflen, int tcp_rcvbuf);
+
+
 /**
- * Create a file connection to a backend for reading a recording thumbnail.
- * \param prog program handle
+ * Create a file connection to a backend.
+ * \param path path to file
  * \param control control handle
  * \param buflen buffer size for the connection to use
  * \param tcp_rcvbuf if non-zero, the TCP receive buffer size for the socket
  * \return file handle
  */
-extern cmyth_file_t cmyth_conn_connect_thumbnail(cmyth_proginfo_t prog,
-						 cmyth_conn_t control,
-						 unsigned buflen,
-						 int tcp_rcvbuf);
+extern cmyth_file_t cmyth_conn_connect_path(char* path, cmyth_conn_t control,
+					    unsigned buflen, int tcp_rcvbuf);
 
 /**
  * Create a ring buffer connection to a recorder.
@@ -531,7 +531,7 @@ extern long long cmyth_recorder_seek(cmyth_recorder_t rec,
 				     cmyth_whence_t whence,
 				     long long curpos);
 
-extern int cmyth_recorder_spawn_chain_livetv(cmyth_recorder_t rec);
+extern int cmyth_recorder_spawn_chain_livetv(cmyth_recorder_t rec, char* channame);
 
 extern int cmyth_recorder_spawn_livetv(cmyth_recorder_t rec);
 
@@ -564,7 +564,7 @@ extern cmyth_recorder_t cmyth_spawn_live_tv(cmyth_recorder_t rec,
 										unsigned buflen,
 										int tcp_rcvbuf,
                     void (*prog_update_callback)(cmyth_proginfo_t),
-										char ** err);
+										char ** err, char * channame);
 
 extern cmyth_recorder_t cmyth_livetv_chain_setup(cmyth_recorder_t old_rec,
 						 int tcp_rcvbuf,
@@ -580,18 +580,15 @@ extern int cmyth_livetv_request_block(cmyth_recorder_t rec, unsigned long len);
 extern long long cmyth_livetv_seek(cmyth_recorder_t rec,
 						long long offset, int whence);
 
-extern int cmyth_livetv_keep_recording(cmyth_recorder_t rec, cmyth_database_t db, int keep);
-
 extern int cmyth_livetv_read(cmyth_recorder_t rec,
 			     char *buf,
 			     unsigned long len);
 
+extern int cmyth_livetv_keep_recording(cmyth_recorder_t rec, cmyth_database_t db, int keep);
+
 extern int mythtv_new_livetv(void);
 extern int cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_enabled);
 
-extern int cmyth_ringbuf_read(cmyth_recorder_t rec,
-			      char *buf,
-			      unsigned long len);
 /*
  * -----------------------------------------------------------------
  * Database Operations 
@@ -1036,6 +1033,26 @@ extern int cmyth_file_read(cmyth_file_t file,
 			   unsigned long len);
 /*
  * -----------------------------------------------------------------
+ * Channel Operations
+ * -----------------------------------------------------------------
+ */
+
+extern long cmyth_channel_chanid(cmyth_channel_t channel);
+
+extern long cmyth_channel_channum(cmyth_channel_t channel);
+
+extern char * cmyth_channel_name(cmyth_channel_t channel);
+
+extern char * cmyth_channel_icon(cmyth_channel_t channel);
+
+extern int cmyth_channel_visible(cmyth_channel_t channel);
+
+extern cmyth_channel_t cmyth_chanlist_get_item(cmyth_chanlist_t pl, int index);
+
+extern int cmyth_chanlist_get_count(cmyth_chanlist_t pl);
+
+/*
+ * -----------------------------------------------------------------
  * Free Space Operations
  * -----------------------------------------------------------------
  */
@@ -1118,4 +1135,5 @@ extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
 
 extern int cmyth_mythtv_remove_previous_recorded(cmyth_database_t db,char *query);
 
+extern cmyth_chanlist_t cmyth_mysql_get_chanlist(cmyth_database_t db);
 #endif /* __CMYTH_H */
