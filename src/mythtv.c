@@ -1846,9 +1846,10 @@ event_start(void *arg)
 			break;
 		case CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE:
 			printf("MythTV event CMYTH_EVENT_RECORDING_LIST_CHANGE_DELETE: %s\n",buf);
-			/* required to remove recordings from listing deleted by other frontends */
-			episode_dirty = 1;
-			mvpw_expose(mythtv_browser);
+			/* required to remove recordings from recording list deleted by other frontends
+			   this causes multiple recording list refreshes and random crashes when deleting with mvpmc, thus disabled */
+			//episode_dirty = 1;
+			//mvpw_expose(mythtv_browser);
 			break;
 		case CMYTH_EVENT_SCHEDULE_CHANGE:
 			printf("MythTV event SCHEDULE_CHANGE\n");
