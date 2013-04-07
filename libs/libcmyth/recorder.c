@@ -1149,13 +1149,7 @@ cmyth_recorder_get_next_program_info(cmyth_recorder_t rec,
 	next_prog->proginfo_subtitle = ref_strdup(subtitle);
 	next_prog->proginfo_description = ref_strdup(desc);
 	next_prog->proginfo_channame = ref_strdup(channelname);
-	next_prog->proginfo_chanstr = ref_strdup(channelname);
-	if (control->conn_version > 40) { /* we are hoping this is fixed by next version bump */
 	next_prog->proginfo_chansign = ref_strdup(callsign);
-	} else {
-		next_prog->proginfo_chansign = cmyth_utf8tolatin1(callsign);
-	}
-	next_prog->proginfo_chanicon = ref_strdup(iconpath);
 	
 	next_prog->proginfo_chanId = atoi(chanid);
 
@@ -1357,9 +1351,8 @@ cmyth_recorder_spawn_livetv(cmyth_recorder_t rec)
 }
 
 /* Sergio: Added to support the new livetv protocol */
-/* BG: TODO: do something sensible with channame */
 int
-cmyth_recorder_spawn_chain_livetv(cmyth_recorder_t rec, char *channame)
+cmyth_recorder_spawn_chain_livetv(cmyth_recorder_t rec)
 {
 	int err;
 	int ret = -1;
@@ -1386,14 +1379,16 @@ cmyth_recorder_spawn_chain_livetv(cmyth_recorder_t rec, char *channame)
 	strftime(datestr, 32, "%Y-%m-%dT%H:%M:%S", localtime(&t));
 	
 	/* Now build the SPAWN_LIVETV message */
-	if(rec->rec_conn->conn_version >= 34 && channame)
+	if (rec->rec_conn->conn_version >=50) {
 		snprintf(msg, sizeof(msg),
-			"QUERY_RECORDER %d[]:[]SPAWN_LIVETV[]:[]live-%s-%s[]:[]%d[]:[]%s",
-			 rec->rec_id, myhostname, datestr, 0, channame);
-	else
+		"QUERY_RECORDER %d[]:[]SPAWN_LIVETV[]:[]live-%s-%s[]:[]%d[]:[]",
+		 rec->rec_id, myhostname, datestr, 0);
+	}
+	else {
 		snprintf(msg, sizeof(msg),
 		"QUERY_RECORDER %d[]:[]SPAWN_LIVETV[]:[]live-%s-%s[]:[]%d",
 		 rec->rec_id, myhostname, datestr, 0);
+	}
 
 	if ((err=cmyth_send_message(rec->rec_conn, msg)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,

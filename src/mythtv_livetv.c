@@ -221,12 +221,8 @@ mythtv_new_livetv_start(cmyth_recorder_t rec)
 	}
 
 	mvpw_set_timer(mythtv_slow_connect, slow_to_connect_callback, 10000);
-	// we don't have a channel defined yet, so we have to find out the recorder's current channel
-	loc_prog = cmyth_recorder_get_cur_proginfo(rec);
-	
 	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
-								  prog_update_callback, &msg,
-								  cmyth_proginfo_channame(loc_prog))) == NULL)
+																prog_update_callback, &msg)) == NULL)
 		goto err;
 	mvpw_set_timer(mythtv_slow_connect, NULL, 0);
 	mvpw_hide(mythtv_slow_connect);
@@ -241,7 +237,9 @@ mythtv_new_livetv_start(cmyth_recorder_t rec)
 		msg = "Get framerate failed.";
 		goto err;
 	}
+
 	fprintf(stderr, "recorder framerate is %5.2f\n", rate);
+
 
 	rb_file = (char *) cmyth_recorder_get_filename(rec);
 	/*
@@ -270,7 +268,7 @@ mythtv_new_livetv_start(cmyth_recorder_t rec)
 	// get the information about the current programme
 	// we assume last used structure is cleared already...
 	//
-//	loc_prog = cmyth_recorder_get_cur_proginfo(rec);
+	loc_prog = cmyth_recorder_get_cur_proginfo(rec);
 	PRINTF("** SSDEBUG: the loc_prog is: %p\n", loc_prog);
 	CHANGE_GLOBAL_REF(current_prog, loc_prog);
 	ref_release(loc_prog);
@@ -440,14 +438,8 @@ mythtv_livetv_start(int *tuner)
 	}
 
 	mvpw_set_timer(mythtv_slow_connect, slow_to_connect_callback, 10000);
-	
-	// we don't have a channel defined yet, so we have to find out the recorder's current channel
-	loc_prog = cmyth_recorder_get_cur_proginfo(rec);
-	
 	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
-								  prog_update_callback, &msg,
-								  cmyth_proginfo_channame(loc_prog))) == NULL)
-
+																prog_update_callback, &msg)) == NULL)
 		goto err;
 	mvpw_set_timer(mythtv_slow_connect, NULL, 0);
 	mvpw_hide(mythtv_slow_connect);
@@ -676,7 +668,6 @@ int __change_channel(direction)
 	 * source file. This is way too much code for this location.
 	 * TODO.
 	 */
-
 	if(new_live_tv) {
 		int idx = myth_get_chan_index(tvguide_chanlist, current_prog);
 
@@ -697,6 +688,7 @@ int __change_channel(direction)
 		mvp_tvguide_move(MVPW_ARRAY_HOLD, mythtv_livetv_program_list,
 									 	mythtv_livetv_description);
 	}
+
  out:
 	mvp_atomic_dec(&mythtv_prevent_request_block);
 	pthread_mutex_unlock(&request_block_mutex);
@@ -1280,7 +1272,7 @@ get_livetv_programs(void)
 int
 mythtv_new_livetv(void)
 {
-	int i;
+	int c, i;
 	cmyth_recorder_t rec;
 	cmyth_conn_t ctrl;
 
@@ -1308,16 +1300,16 @@ mythtv_new_livetv(void)
 	pthread_mutex_lock(&myth_mutex);
 	ctrl = ref_hold(control);
 
-	// not required, we're checking them again below
-//	if ((c=cmyth_conn_get_free_recorder_count(ctrl)) < 0) {
-//		gui_error("No tuners available for Live TV.");
-//		fprintf(stderr, "unable to get free recorder\n");
-//		ref_release(ctrl);
-//		cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) -2}\n",
-//			    __FUNCTION__, __FILE__, __LINE__);
-//		return -1;
-//	}
+	if ((c=cmyth_conn_get_free_recorder_count(ctrl)) < 0) {
+		gui_error("No tuners available for Live TV.");
+		fprintf(stderr, "unable to get free recorder\n");
+		ref_release(ctrl);
+		cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) -2}\n",
+			    __FUNCTION__, __FILE__, __LINE__);
+		return -1;
+	}
 
+	mvpw_clear_menu(mythtv_browser);
 
 	/* Get the first available recorder for live tv */
 	for (i=0; i<MAX_TUNER; i++) {
@@ -1338,8 +1330,6 @@ mythtv_new_livetv(void)
 		return -1;
 	}
 
-	mvpw_clear_menu(mythtv_browser);
-	
 	pthread_mutex_unlock(&myth_mutex);
 	/* Launch live tv on the free recorder */
 	return mythtv_new_livetv_start(rec);

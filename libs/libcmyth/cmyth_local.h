@@ -117,15 +117,13 @@ struct cmyth_channel {
 	long cardids;/* A bit array of recorders/tuners supporting the channel */
 	char *callsign;
 	char *name;
-	char *icon;
-	int visible;
 };
 
 struct cmyth_chanlist {
-	cmyth_channel_t *chanlist_list;
-//	int chanlist_sort_desc;
+	cmyth_channel_t chanlist_list;
+	int chanlist_sort_desc;
 	int chanlist_count;
-//	int chanlist_alloc;
+	int chanlist_alloc;
 };
 
 /* Sergio: Added to support the tvguide functionality */
@@ -335,12 +333,6 @@ extern int cmyth_rcv_ushort(cmyth_conn_t conn, int *err, unsigned short *buf,
 extern int cmyth_rcv_ulong(cmyth_conn_t conn, int *err, unsigned long *buf,
 			   int count);
 
-#define cmyth_rcv_ulong_long __cmyth_rcv_ulong_long
-extern int cmyth_rcv_ulong_long(cmyth_conn_t conn,
-                               int *err,
-                               unsigned long long *buf,
-                               int count);
-
 #define cmyth_rcv_data __cmyth_rcv_data
 extern int cmyth_rcv_data(cmyth_conn_t conn, int *err, unsigned char *buf,
 			  int count);
@@ -447,7 +439,5 @@ extern int cmyth_mysql_query(cmyth_mysql_query_t * query);
 
 extern MYSQL_RES * cmyth_mysql_query_result(cmyth_mysql_query_t * query);
 #endif /* HAS_MYSQL */
-
-extern char* cmyth_utf8tolatin1(char* s);
 
 #endif /* __CMYTH_LOCAL_H */

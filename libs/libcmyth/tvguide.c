@@ -260,35 +260,18 @@ int
 myth_get_chan_index_from_int(cmyth_chanlist_t chanlist, int nchan)
 {
 	int rtrn;
-/*
+
 	if(chanlist->chanlist_sort_desc) {
-		for(rtrn = 0; rtrn < cmyth_chanlist_get_count(chanlist); rtrn++) {
-		    cmyth_channel_t channel = cmyth_chanlist_get_item(chanlist,rtrn);
-		    if (channel) {
-			if (!cmyth_channel_visible(channel)) {
-			    ref_release(channel);
-			    continue;
-			}
-			if (cmyth_channel_channum(channel) <= nchan)
+		for(rtrn = 0; rtrn < chanlist->chanlist_count; rtrn++)
+			if(chanlist->chanlist_list[rtrn].channum <= nchan)
 				break;
-			}
-		}
 	}
-	else { 
-*/
-		for(rtrn = 0; rtrn < cmyth_chanlist_get_count(chanlist); rtrn++) {
-		    cmyth_channel_t channel = cmyth_chanlist_get_item(chanlist,rtrn);
-		    if (channel) {
-			if (!cmyth_channel_visible(channel)) {
-			    ref_release(channel);
-			    continue;
-			}
-			if (cmyth_channel_channum(channel) >= nchan)
+	else {
+		for(rtrn = 0; rtrn < chanlist->chanlist_count; rtrn++)
+			if(chanlist->chanlist_list[rtrn].channum >= nchan)
 				break;
-			}
-		}
-/*	}	*/
-	rtrn = rtrn==cmyth_chanlist_get_count(chanlist)?rtrn-1:rtrn;
+	}
+	rtrn = rtrn==chanlist->chanlist_count?rtrn-1:rtrn;
 
 	return rtrn;
 }
@@ -315,15 +298,14 @@ int
 myth_get_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog)
 {
 	int rtrn;
-	cmyth_channel_t channel;
 
-	for(rtrn = 0; rtrn < cmyth_chanlist_get_count(chanlist); rtrn++) {
-		channel = cmyth_chanlist_get_item(chanlist, rtrn);
-		if(channel->chanid == prog->proginfo_chanId
-			 && strcmp(channel->callsign,
+	for(rtrn = 0; rtrn < chanlist->chanlist_count; rtrn++)
+		if(chanlist->chanlist_list[rtrn].chanid == prog->proginfo_chanId
+			 && strcmp(chanlist->chanlist_list[rtrn].callsign,
 			 					 prog->proginfo_chansign) == 0)
 			break;
-	}
+	rtrn = rtrn==chanlist->chanlist_count?-1:rtrn;
+
 	return rtrn;
 }
 
@@ -337,11 +319,8 @@ myth_is_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog,
 {
 	int rtrn = 0;
 	cmyth_proginfo_t lprog = ref_hold(prog);
-	cmyth_channel_t channel;
-	
-	channel = cmyth_chanlist_get_item(chanlist, index);
-	
-	if(channel->chanid == lprog->proginfo_chanId)
+
+	if(chanlist->chanlist_list[index].chanid == lprog->proginfo_chanId)
 		rtrn = 1;
 
 	ref_release(prog);
@@ -356,12 +335,10 @@ static int
 get_chan_num(long chanid, cmyth_chanlist_t chanlist)
 {
 	int i;
-	cmyth_channel_t channel;
 
-	for(i=0; i < cmyth_chanlist_get_count(chanlist); i++) {
-		channel = cmyth_chanlist_get_item(chanlist, i);
-		if(channel->chanid == chanid)
-			return channel->channum;
+	for(i=0; i<chanlist->chanlist_count;i++) {
+		if(chanlist->chanlist_list[i].chanid == chanid)
+			return chanlist->chanlist_list[i].channum;
 	}
 
 	return 0;
@@ -376,8 +353,7 @@ static char *
 myth_get_chan_str_from_int(cmyth_chanlist_t chanlist, int nchan)
 {
 	int idx = myth_get_chan_index_from_int(chanlist, nchan);
-	cmyth_channel_t channel = cmyth_chanlist_get_item(chanlist,idx);
-	return channel->chanstr;
+	return chanlist->chanlist_list[idx].chanstr;
 }
 
 /*
@@ -408,7 +384,7 @@ get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
 {
 	MYSQL_RES *res=NULL;
 	MYSQL_ROW row;
-	char query[350];
+  char query[350];
 	char channels[50];
 	int i, rows = 0, idxs[4], idx=0; 
 	static cmyth_program_t * cache = NULL;
@@ -434,25 +410,17 @@ get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
 	PRINTF("** SSDEBUG: indexes are: %d, %d, %d, %d\n", idxs[0], idxs[1],
 					idxs[2], idxs[3]);
 	PRINTF("** SSDEBUG: callsigns are: %s, %s, %s, %s\n",
-		(cmyth_chanlist_get_item(chanlist,idxs[0]))->callsign,
-		(cmyth_chanlist_get_item(chanlist,idxs[1]))->callsign,
-		(cmyth_chanlist_get_item(chanlist,idxs[2]))->callsign,
-		(cmyth_chanlist_get_item(chanlist,idxs[3]))->callsign
-//		chanlist->chanlist_list[idxs[0]].callsign,
-//		chanlist->chanlist_list[idxs[1]].callsign,
-//		chanlist->chanlist_list[idxs[2]].callsign,
-//		chanlist->chanlist_list[idxs[3]].callsign
+		chanlist->chanlist_list[idxs[0]].callsign,
+		chanlist->chanlist_list[idxs[1]].callsign,
+		chanlist->chanlist_list[idxs[2]].callsign,
+		chanlist->chanlist_list[idxs[3]].callsign
 	);
 
 	sprintf(channels, "(%ld, %ld, %ld, %ld)",
-		(cmyth_chanlist_get_item(chanlist,idxs[0]))->chanid,
-		(cmyth_chanlist_get_item(chanlist,idxs[1]))->chanid,
-		(cmyth_chanlist_get_item(chanlist,idxs[2]))->chanid,
-		(cmyth_chanlist_get_item(chanlist,idxs[3]))->chanid
-//		chanlist->chanlist_list[idxs[0]].chanid,
-//		chanlist->chanlist_list[idxs[1]].chanid,
-//		chanlist->chanlist_list[idxs[2]].chanid,
-//		chanlist->chanlist_list[idxs[3]].chanid
+		chanlist->chanlist_list[idxs[0]].chanid,
+		chanlist->chanlist_list[idxs[1]].chanid,
+		chanlist->chanlist_list[idxs[2]].chanid,
+		chanlist->chanlist_list[idxs[3]].chanid
 	);
 
 	PRINTF("** SSDEBUG: starttime:%d, endtime:%d\n", starttime, endtime);
@@ -554,8 +522,7 @@ get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
 
 
 		for(i = 0; i<cache_ct; i++) {
-//			if(cache[i].chanid == chanlist->chanlist_list[idxs[idx]].chanid) {
-			if(cache[i].chanid == (cmyth_chanlist_get_item(chanlist,idxs[idx]))->chanid) {
+			if(cache[i].chanid == chanlist->chanlist_list[idxs[idx]].chanid) {
 				break;
 			}
 		}
@@ -567,8 +534,7 @@ get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
 			PRINTF("** SSDEBUG: no program info on channel id: %d between %s, %s\n",
 							idxs[idx], starttime, endtime);
 			proglist->progs[rows].channum = get_chan_num(idxs[idx], chanlist);
-//			proglist->progs[rows].chanid=chanlist->chanlist_list[idxs[idx]].chanid;
-			proglist->progs[rows].chanid=(cmyth_chanlist_get_item(chanlist,idxs[idx]))->chanid;
+			proglist->progs[rows].chanid=chanlist->chanlist_list[idxs[idx]].chanid;
 			proglist->progs[rows].event_flags=cache[i].event_flags;
 			proglist->progs[rows].starttime = start_time;
 			proglist->progs[rows].endtime = end_time;
@@ -636,28 +602,28 @@ myth_guide_set_channels(void * widget, cmyth_chanlist_t chanlist,
 	for(i = index; i>index-4; i--) {
 		if(i <0) {
 			j = chanlist->chanlist_count + i;
-			sprintf(buf, "%d\n%s", (cmyth_chanlist_get_item(chanlist,j))->channum,
-						(cmyth_chanlist_get_item(chanlist,j))->callsign);
-			if((free_recorders &  (cmyth_chanlist_get_item(chanlist,j))->cardids) == 0)
+			sprintf(buf, "%d\n%s", chanlist->chanlist_list[j].channum,
+						chanlist->chanlist_list[j].callsign);
+			if((free_recorders & chanlist->chanlist_list[j].cardids) == 0)
 				mvpw_set_array_row_bg(prog_widget, index-i, MVPW_DARK_RED);
 			else
 				mvpw_set_array_row_bg(prog_widget, index-i, MVPW_DARKGREY);
 			mvpw_set_array_row(prog_widget, index-i, buf, NULL);
 			PRINTF("** SSDEBUG: loading guide: %d:%s\n",
-						(cmyth_chanlist_get_item(chanlist,j))->channum,
-						(cmyth_chanlist_get_item(chanlist,j))->callsign);
+						chanlist->chanlist_list[j].channum,
+						chanlist->chanlist_list[j].callsign);
 		}
 		else {
-			sprintf(buf, "%d\n%s", (cmyth_chanlist_get_item(chanlist,i))->channum,
-						(cmyth_chanlist_get_item(chanlist,i))->callsign);
-			if((free_recorders & (cmyth_chanlist_get_item(chanlist,i))->cardids) == 0)
+			sprintf(buf, "%d\n%s", chanlist->chanlist_list[i].channum,
+						chanlist->chanlist_list[i].callsign);
+			if((free_recorders & chanlist->chanlist_list[i].cardids) == 0)
 				mvpw_set_array_row_bg(prog_widget, index-i, MVPW_DARK_RED);
 			else
 				mvpw_set_array_row_bg(prog_widget, index-i, MVPW_DARKGREY);
 			mvpw_set_array_row(prog_widget, index-i, buf, NULL);
 			PRINTF("** SSDEBUG: loading guide: %d:%s\n",
-						(cmyth_chanlist_get_item(chanlist,i))->channum,
-						(cmyth_chanlist_get_item(chanlist,i))->callsign);
+						chanlist->chanlist_list[i].channum,
+						chanlist->chanlist_list[i].callsign);
 		}
 	}
 
@@ -918,9 +884,11 @@ cmyth_chanlist_t
 myth_release_chanlist(cmyth_chanlist_t cl)
 {
 	int i;
-	if (cl) {
-		for (i = 0; i < cmyth_chanlist_get_count(cl); i++) {
-        		ref_release(cmyth_chanlist_get_item(cl, i));
+
+	if(cl) {
+		for(i=0; i<cl->chanlist_count; i++) {
+			ref_release(cl->chanlist_list[i].callsign);
+			ref_release(cl->chanlist_list[i].name);
 		}
 		ref_release(cl);
 	}
@@ -987,46 +955,101 @@ myth_tvguide_get_active_card(cmyth_recorder_t rec)
 /*
  *
  */
-
-static int chanid_compare_desc(const void *a, const void *b) {
-	const cmyth_channel_t x = *(cmyth_channel_t *)a;
-	const cmyth_channel_t y = *(cmyth_channel_t *)b;
-	if (x->chanid < y->chanid)
-	    return 1;
-	else if (x->chanid > y->chanid)
-	    return -1;
-	else
-	    return 0;
-}
-
-static int chanid_compare_asc(const void *a, const void *b) {
-	const cmyth_channel_t x = *(cmyth_channel_t *)a;
-	const cmyth_channel_t y = *(cmyth_channel_t *)b;
-	if (x->chanid > y->chanid)
-	    return 1;
-	else if (x->chanid < y->chanid)
-	    return -1;
-	else
-	    return 0;
-}
-
 cmyth_chanlist_t
 myth_tvguide_load_channels(cmyth_database_t db, int sort_desc)
 {
-	cmyth_chanlist_t rtrn=cmyth_mysql_get_chanlist(db);
-	if (sort_desc) {
-	    qsort((cmyth_channel_t)cmyth_chanlist_get_item(rtrn,0),
-	           cmyth_chanlist_get_count(rtrn),
-	           sizeof(cmyth_channel_t),
-	           chanid_compare_desc);
+	MYSQL *mysql;
+	MYSQL_RES *res=NULL;
+	MYSQL_ROW row;
+	char query[300];
+	cmyth_chanlist_t rtrn;
+        
+	mysql=mysql_init(NULL);
+	PRINTF("** SSDEBUG host:%s, user:%s, password:%s\n", db->db_host,
+				 db->db_user, db->db_pass);
+	if(!(mysql_real_connect(mysql,db->db_host,db->db_user, db->db_pass,
+													db->db_name, 0,NULL,0))) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: mysql_connect() Failed: %s\n",
+    					__FUNCTION__, mysql_error(mysql));
+		fprintf(stderr, "mysql_connect() Failed: %s\n",mysql_error(mysql));
+						mysql_close(mysql);
+		return NULL;
 	}
-	else {
-	    qsort((cmyth_channel_t)cmyth_chanlist_get_item(rtrn,0),
-	           cmyth_chanlist_get_count(rtrn),
-	           sizeof(cmyth_channel_t),
-	           chanid_compare_asc);
+	/*
+	 * A table join query is required to generate the bitstring that
+	 * represents the recorders that can be used to access the channel.
+	 */
+sprintf(query, "SELECT chanid,channum,channum+0 as channumi,cardid, callsign,name FROM cardinput, channel WHERE cardinput.sourceid=channel.sourceid AND visible=1 ORDER BY channumi %s, callsign ASC", sort_desc?"DESC":"ASC");
+	cmyth_dbg(CMYTH_DBG_ERROR, "%s: query= %s\n", __FUNCTION__, query);
+
+	PRINTF("** SSDEBUG: The query is %s\n", query);
+
+	if(mysql_query(mysql,query)) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: mysql_query() Failed: %s\n", 
+                           __FUNCTION__, mysql_error(mysql));
+		mysql_close(mysql);
+		return NULL;
 	}
-		
+
+	res = mysql_store_result(mysql);
+	PRINTF("** SSDEBUG: Number of rows retreived = %llu\n", res->row_count);
+	/* Create a return structure that has room for all the records
+	 * retrieved knowing that some may be the same on multiple recorders
+	 */
+	rtrn = ref_alloc(sizeof(*rtrn));
+	rtrn->chanlist_list = (cmyth_channel_t)
+			ref_alloc(sizeof(*(rtrn->chanlist_list))*res->row_count/ALLOC_FRAC);
+	if(!rtrn->chanlist_list) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: chanlist allocation failed\n", 
+							__FUNCTION__);
+		return NULL;
+	}
+	rtrn->chanlist_alloc = res->row_count/ALLOC_FRAC;
+	rtrn->chanlist_count = 0;
+	rtrn->chanlist_sort_desc = sort_desc;
+
+	while((row = mysql_fetch_row(res))) {
+		if(rtrn->chanlist_count == rtrn->chanlist_alloc) {
+			PRINTF("** SSDEBUG: allocating more space with count = %d and alloc =%d\n",	rtrn->chanlist_count, rtrn->chanlist_alloc);
+
+			rtrn->chanlist_list = (cmyth_channel_t)
+				ref_realloc(rtrn->chanlist_list, sizeof(struct cmyth_channel)
+										*(rtrn->chanlist_count + res->row_count/ALLOC_FRAC));
+			if(!rtrn->chanlist_list) {
+				cmyth_dbg(CMYTH_DBG_ERROR, "%s: chanlist allocation failed\n", 
+									__FUNCTION__);
+				return NULL;
+			}
+			rtrn->chanlist_alloc += res->row_count/ALLOC_FRAC;
+		}
+		/* Check if this entry is the same as the previous. If it is, then
+		 * the only differentiation is the recorder. Add it to the sources
+		 * for the previous recorder and ignore this one.
+		 */
+		if(rtrn->chanlist_count &&
+			!strcmp(rtrn->chanlist_list[rtrn->chanlist_count-1].callsign, row[4])
+			&& (rtrn->chanlist_list[rtrn->chanlist_count-1].channum == atoi(row[1]))
+			&& !strcmp(rtrn->chanlist_list[rtrn->chanlist_count-1].name, row[5])) {
+			rtrn->chanlist_list[rtrn->chanlist_count-1].cardids
+																			|= 1 << (atoi(row[3])-1);
+		}
+		else {
+			rtrn->chanlist_list[rtrn->chanlist_count].chanid = atoi(row[0]);
+			rtrn->chanlist_list[rtrn->chanlist_count].channum = atoi(row[1]);
+			strncpy(rtrn->chanlist_list[rtrn->chanlist_count].chanstr, row[1], 10);
+			rtrn->chanlist_list[rtrn->chanlist_count].cardids = 1 << (atoi(row[3])-1);
+			rtrn->chanlist_list[rtrn->chanlist_count].callsign = ref_strdup(row[4]);
+			rtrn->chanlist_list[rtrn->chanlist_count].name = ref_strdup(row[5]);
+			rtrn->chanlist_count += 1;
+		}
+		fprintf(stderr,"** SSDEBUG: cardid for channel %d is %ld with count %d\n",
+			rtrn->chanlist_list[rtrn->chanlist_count-1].channum,
+			rtrn->chanlist_list[rtrn->chanlist_count-1].cardids,
+			rtrn->chanlist_count-1);
+	}
+	cmyth_dbg(CMYTH_DBG_ERROR, "%s returned rows =  %d\n",__FUNCTION__,
+						res->row_count);
+	mysql_free_result(res);
+	mysql_close(mysql);
 	return rtrn;
 }
-
