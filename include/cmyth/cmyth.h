@@ -233,6 +233,18 @@ extern cmyth_conn_t cmyth_conn_connect_ctrl(char *server,
 					    unsigned short port,
 					    unsigned buflen, int tcp_rcvbuf);
 
+
+/**
+ * Create a file connection to a backend.
+ * \param path path to file
+ * \param control control handle
+ * \param buflen buffer size for the connection to use
+ * \param tcp_rcvbuf if non-zero, the TCP receive buffer size for the socket
+ * \return file handle
+ */
+extern cmyth_file_t cmyth_conn_connect_path(char* path, cmyth_conn_t control,
+					    unsigned buflen, int tcp_rcvbuf);
+
 /**
  * Create an event connection to a backend.
  * \param server server hostname or ip address
@@ -256,7 +268,6 @@ extern cmyth_conn_t cmyth_conn_connect_event(char *server,
 extern cmyth_file_t cmyth_conn_connect_file(cmyth_proginfo_t prog,
 					    cmyth_conn_t control,
 					    unsigned buflen, int tcp_rcvbuf);
-
 /**
  * Create a file connection to a backend for reading a recording thumbnail.
  * \param prog program handle
@@ -569,9 +580,18 @@ extern int cmyth_livetv_request_block(cmyth_recorder_t rec, unsigned long len);
 extern long long cmyth_livetv_seek(cmyth_recorder_t rec,
 						long long offset, int whence);
 
+extern int cmyth_livetv_keep_recording(cmyth_recorder_t rec, cmyth_database_t db, int keep);
+
+extern int cmyth_livetv_read(cmyth_recorder_t rec,
+			     char *buf,
+			     unsigned long len);
+
 extern int mythtv_new_livetv(void);
 extern int cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_enabled);
 
+extern int cmyth_ringbuf_read(cmyth_recorder_t rec,
+			      char *buf,
+			      unsigned long len);
 /*
  * -----------------------------------------------------------------
  * Database Operations 
@@ -736,6 +756,9 @@ extern int cmyth_proginfo_forget_recording(cmyth_conn_t control,
 extern int cmyth_proginfo_get_recorder_num(cmyth_conn_t control,
 					   cmyth_rec_num_t rnum,
 					   cmyth_proginfo_t prog);
+
+extern cmyth_proginfo_t cmyth_proginfo_get_from_basename(cmyth_conn_t control,
+							 const char* basename);
 
 /**
  * Retrieve the title of a program.
@@ -1008,7 +1031,9 @@ extern int cmyth_file_select(cmyth_file_t file, struct timeval *timeout);
 extern void cmyth_file_set_closed_callback(cmyth_file_t file,
 					void (*callback)(cmyth_file_t));
 
-
+extern int cmyth_file_read(cmyth_file_t file,
+			   char *buf,
+			   unsigned long len);
 /*
  * -----------------------------------------------------------------
  * Free Space Operations

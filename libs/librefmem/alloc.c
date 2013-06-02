@@ -41,8 +41,8 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <mvp_refmem.h>
-#include <mvp_atomic.h>
+#include <refmem.h>
+#include <atomic.h>
 #include <refmem_local.h>
 
 #include <string.h>

@@ -20,7 +20,7 @@
 #ifndef MYTHTV_H
 #define MYTHTV_H
 
-#include <mvp_refmem.h>
+#include <refmem.h>
 #include <cmyth.h>
 
 

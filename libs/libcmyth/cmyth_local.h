@@ -30,7 +30,7 @@
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif
-#include <mvp_refmem.h>
+#include <refmem.h>
 #include <cmyth.h>
 #include <time.h>
 #include <stdint.h>
