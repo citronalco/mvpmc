@@ -25,6 +25,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <cmyth_local.h>
+#include <cmyth_local_deprecated.h>
 #include <mvp_widget.h>
 
 #define ALLOC_FRAC 10

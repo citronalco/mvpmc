@@ -40,6 +40,8 @@
 #include <atomic.h>
 #include <cmyth.h>
 
+#include <cmyth_deprecated.h>
+
 #include "mvpmc.h"
 #include "mythtv.h"
 #include "config.h"
