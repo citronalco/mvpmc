@@ -35,7 +35,9 @@
 #include <mvp_av.h>
 #include <mvp_demux.h>
 #include <refmem.h>
+#include <atomic.h>
 #include <cmyth.h>
+#include <cmyth_deprecated.h>
 
 #include "mvpmc.h"
 #include "mythtv.h"

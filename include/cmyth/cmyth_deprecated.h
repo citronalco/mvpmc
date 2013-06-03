@@ -1,3 +1,6 @@
+#ifndef __CMYTH_REMOVED
+#define __CMYTH_REMOVED
+
 /**
  * Create a file connection to a backend.
  * \param path path to file
@@ -28,3 +31,37 @@ extern int cmyth_file_read(cmyth_file_t file,
                           unsigned long len);
 
 extern char * cmyth_get_dbschemaver_mysql(cmyth_database_t db);
+
+/******************************************************************************/
+/* Below: removed from cmyth on 2013-01.06 */
+/******************************************************************************/
+/* Sergio: Added to support the tvguide functionality */
+struct cmyth_channel;
+typedef struct cmyth_channel *cmyth_channel_t;
+
+struct cmyth_chanlist;
+typedef struct cmyth_chanlist *cmyth_chanlist_t;
+
+extern cmyth_file_t cmyth_livetv_get_cur_file(cmyth_recorder_t rec);
+
+extern int mythtv_new_livetv(void);
+
+extern cmyth_chanlist_t myth_tvguide_load_channels(cmyth_database_t db, int sort_desc);
+
+/*
+ * -----------------------------------------------------------------
+ * Timestamp Operations
+ * -----------------------------------------------------------------
+ */
+extern cmyth_timestamp_t cmyth_datetime_from_string(char *str);
+
+/*
+ * -----------------------------------------------------------------
+ * Key Frame Operations
+ * -----------------------------------------------------------------
+ */
+extern cmyth_keyframe_t cmyth_keyframe_tcmyth_keyframe_get(
+        unsigned long keynum,
+        unsigned long long pos);
+
+#endif
