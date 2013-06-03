@@ -22,7 +22,7 @@
 
 #include <refmem.h>
 #include <cmyth.h>
-#include <cmyth_deprecated.h>
+#include <cmyth_removed.h>
 
 typedef struct mysql_config_s mysql_config_t;
 char prog_finder_hilite_char[1];		/* Current Program Finder First Character */

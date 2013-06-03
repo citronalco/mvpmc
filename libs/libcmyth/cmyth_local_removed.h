@@ -3,7 +3,7 @@
 
 #include <cmyth.h>
 #include <cmyth_local.h>
-#include <cmyth_deprecated.h>
+#include <cmyth_removed.h>
 
 /* Sergio: Added to support the tvguide functionality */
 struct cmyth_tvguide_progs {

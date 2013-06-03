@@ -37,7 +37,7 @@
 #include <refmem.h>
 #include <atomic.h>
 #include <cmyth.h>
-#include <cmyth_deprecated.h>
+#include <cmyth_removed.h>
 
 #include "mvpmc.h"
 #include "mythtv.h"
