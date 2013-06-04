@@ -1892,6 +1892,12 @@ event_start(void *arg)
 		case CMYTH_EVENT_CLEAR_SETTINGS_CACHE:
 			printf("MythTV event CMYTH_EVENT_CLEAR_SETTINGS_CACHE\n");
 			break;
+		case CMYTH_EVENT_ERROR:
+			printf("MythTV event ERROR\n");
+			break;
+		case CMYTH_EVENT_COMMFLAG_START:
+			printf("MythTV event COMMFLAG_START\n");
+			break;
 		}
 	}
 
