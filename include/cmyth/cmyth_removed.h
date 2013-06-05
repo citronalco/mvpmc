@@ -47,13 +47,6 @@ extern char * cmyth_get_dbschemaver_mysql(cmyth_database_t db);
 /******************************************************************************/
 /* Below: removed from cmyth on 2013-01.06 */
 /******************************************************************************/
-/* Sergio: Added to support the tvguide functionality */
-struct cmyth_channel;
-typedef struct cmyth_channel *cmyth_channel_t;
-
-struct cmyth_chanlist;
-typedef struct cmyth_chanlist *cmyth_chanlist_t;
-
 /*
 extern cmyth_file_t cmyth_livetv_get_cur_file(cmyth_recorder_t rec);
 */
