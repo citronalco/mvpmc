@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2012, Jon Gettler
+ *  Copyright (C) 2005-2013, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -110,7 +110,7 @@ cmyth_get_commbreaklist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 
 	sprintf(buf,"%s %ld %i", "QUERY_COMMBREAK", prog->proginfo_chanId, 
 	        (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 	if ((err = cmyth_send_message(conn, buf)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
 			"%s: cmyth_send_message() failed (%d)\n",
@@ -134,7 +134,7 @@ cmyth_get_commbreaklist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 	}
 
 	out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 	return breaklist;
 }
 
@@ -153,6 +153,8 @@ cmyth_get_cutlist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 	if (!buf) {
 		return breaklist;
 	}
+
+	pthread_mutex_lock(&conn->conn_mutex);
 
 	sprintf(buf,"%s %ld %i", "QUERY_CUTLIST", prog->proginfo_chanId, 
 	        (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
@@ -180,7 +182,7 @@ cmyth_get_cutlist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 	}
 
 	out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 	return breaklist;
 }
 
@@ -195,7 +197,7 @@ int cmyth_rcv_commbreaklist(cmyth_conn_t conn, int *err,
 	char *failed = NULL;
 	cmyth_commbreak_t commbreak;
 	unsigned short type;
-	unsigned short start_type = 0;
+	unsigned short start_type = -1;
 	int i;
 
 	if (count <= 0) {
@@ -286,7 +288,7 @@ cmyth_mysql_get_commbreaklist(cmyth_database_t db, cmyth_conn_t conn, cmyth_prog
 	int r;
 
 	cmyth_timestamp_to_display_string(start_ts_dt, prog->proginfo_rec_start_ts, 0);
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 	if ((r=cmyth_mysql_get_commbreak_list(db, prog->proginfo_chanId, start_ts_dt, breaklist, conn->conn_version)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
 			"%s: cmyth_mysql_get_commbreak_list() failed (%d)\n",
@@ -301,7 +303,69 @@ cmyth_mysql_get_commbreaklist(cmyth_database_t db, cmyth_conn_t conn, cmyth_prog
 		breaklist->commbreak_count = 0;
 	}
 	out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 	return breaklist;
 }
 #endif /* HAS_MYSQL */
+
+long long
+cmyth_commbreak_start_mark(cmyth_commbreak_t cb)
+{
+	if (cb == NULL) {
+		return -1;
+	}
+
+	return cb->start_mark;
+}
+
+long long
+cmyth_commbreak_end_mark(cmyth_commbreak_t cb)
+{
+	if (cb == NULL) {
+		return -1;
+	}
+
+	return cb->end_mark;
+}
+
+long long
+cmyth_commbreak_start_offset(cmyth_commbreak_t cb)
+{
+	if (cb == NULL) {
+		return -1;
+	}
+
+	return cb->start_offset;
+}
+
+long long
+cmyth_commbreak_end_offset(cmyth_commbreak_t cb)
+{
+	if (cb == NULL) {
+		return -1;
+	}
+
+	return cb->end_offset;
+}
+
+int
+cmyth_commbreak_get_count(cmyth_commbreaklist_t cbl)
+{
+	if (cbl == NULL) {
+		return -1;
+	}
+
+	return (int)cbl->commbreak_count;
+}
+
+cmyth_commbreak_t
+cmyth_commbreak_get_item(cmyth_commbreaklist_t cbl, unsigned int index)
+{
+	int i = (int)index;
+
+	if ((cbl == NULL) || (i < 0) || (i >= cbl->commbreak_count)) {
+		return NULL;
+	}
+
+	return (cmyth_commbreak_t)ref_hold(cbl->commbreak_list[index]);
+}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2012, Eric Lund, Jon Gettler
+ *  Copyright (C) 2004-2013, Eric Lund, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -15,6 +15,34 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*! \mainpage cmyth
+ *
+ * cmyth is a library that provides a C language API to access and control
+ * a MythTV backend.  It is released under the LGPL 2.1.
+ *
+ * This document describes the internal and external implementation of
+ * libcmyth and librefmem.
+ *
+ * \section projectweb Project website
+ * http://cmyth.github.com/
+ *
+ * \section repos Source repository
+ * https://github.com/cmyth/cmyth
+ *
+ * \section libraries_internal Library Internals
+ * \li \link cmyth_local.h libcmyth \endlink
+ * \li \link refmem_local.h librefmem \endlink
+ *
+ * \section libraries_external Library APIs
+ * \li \link cmyth.h libcmyth \endlink
+ * \li \link refmem.h librefmem \endlink
+ *
+ * \section source Example Source Code
+ * \li \link mythcat.c mythcat \endlink
+ * \li \link mythfuse.c mythfuse \endlink
+ * \li \link mythping.c mythping \endlink
  */
 
 /**
@@ -54,9 +82,6 @@ typedef int cmyth_socket_t;
 #define closesocket(fd) close(fd)
 #endif /* _MSC_VER */
 
-#define mutex __cmyth_mutex
-extern pthread_mutex_t mutex;
-
 /*
  * Some useful constants
  */
@@ -84,6 +109,9 @@ struct cmyth_conn {
 	unsigned long	conn_version;	/**< protocol version */
 	volatile int	conn_hang;	/**< is connection stuck? */
 	int		conn_tcp_rcvbuf;/**< TCP receive buffer size */
+	pthread_mutex_t conn_mutex;
+	int		conn_port;
+	char		*conn_server;
 };
 
 /* Sergio: Added to support new livetv protocol */
@@ -109,28 +137,39 @@ struct cmyth_database {
 };	
 #endif /* HAS_MYSQL */
 
-/* Sergio: Added to clean up channel list handling */
+typedef struct cmyth_chain_entry {
+	cmyth_proginfo_t prog;
+	cmyth_file_t file;
+	long long offset;
+} *cmyth_chain_entry_t ;
+
+struct cmyth_chain {
+	char *chain_id;
+	unsigned int chain_count;
+	int chain_current;
+	cmyth_chain_entry_t *chain_list;
+	void (*chain_callback)(cmyth_proginfo_t prog);
+	pthread_mutex_t chain_mutex;
+	pthread_cond_t chain_cond;
+	pthread_t chain_thread;
+	cmyth_conn_t chain_event;
+	cmyth_conn_t chain_conn;
+	void *chain_thread_args;
+	cmyth_recorder_t chain_thread_rec;
+};
+
 struct cmyth_channel {
-	long chanid;
-	int channum;
-	char chanstr[10];
-	long cardids;/* A bit array of recorders/tuners supporting the channel */
-	char *callsign;
-	char *name;
+	long channel_id;
+	char *channel_name;
+	char *channel_sign;
+	char *channel_string;
+	char *channel_icon;
 };
 
 struct cmyth_chanlist {
-	cmyth_channel_t chanlist_list;
-	int chanlist_sort_desc;
-	int chanlist_count;
-	int chanlist_alloc;
-};
-
-/* Sergio: Added to support the tvguide functionality */
-struct cmyth_tvguide_progs {
-	cmyth_program_t * progs;
-	int count;
-	int alloc;
+	cmyth_channel_t *chanlist_list;
+	long chanlist_count;
+	long chanlist_max;
 };
 
 struct cmyth_recorder {
@@ -140,10 +179,9 @@ struct cmyth_recorder {
 	int rec_port;
 	cmyth_ringbuf_t rec_ring;
 	cmyth_conn_t rec_conn;
-	/* Sergio: Added to support new livetv protocol */
-	cmyth_livetv_chain_t rec_livetv_chain;
-	cmyth_file_t rec_livetv_file;
-	double rec_framerate;
+	int rec_connected;
+	cmyth_chanlist_t rec_chanlist;
+	cmyth_chain_t rec_chain;
 };
 
 /**
@@ -157,7 +195,6 @@ struct cmyth_file {
 	uint64_t file_start;	/**< file start offest */
 	uint64_t file_length;	/**< file length */
 	uint64_t file_pos;	/**< current file position */
-	uint64_t file_req;	/**< current file position requested */
 	cmyth_conn_t file_control;	/**< master backend connection */
 };
 
@@ -210,6 +247,7 @@ struct cmyth_proginfo {
 	char *proginfo_description;
 	unsigned short proginfo_season;    /* new in V67 */
 	unsigned short proginfo_episode;    /* new in V67 */
+	char *proginfo_syndicatedepisode;    /* new in V76 */
 	char *proginfo_category;
 	long proginfo_chanId;
 	char *proginfo_chanstr;
@@ -233,11 +271,11 @@ struct cmyth_proginfo {
 	unsigned long proginfo_record_id;  /* ??? in V8 */
 	unsigned long proginfo_rec_type;   /* ??? in V8 */
 	unsigned long proginfo_rec_dups;   /* ??? in V8 */
-	unsigned long proginfo_unknown_1;  /* new in V8 */
+	unsigned long proginfo_rec_dupmethod;  /* new in V8 */
 	cmyth_timestamp_t proginfo_rec_start_ts;
 	cmyth_timestamp_t proginfo_rec_end_ts;
 	unsigned long proginfo_repeat;   /* ??? in V8 */
-	unsigned long proginfo_program_flags;
+	long proginfo_program_flags;
 	char *proginfo_rec_profile;  /* new in V8 */
 	char *proginfo_recgroup;    /* new in V8 */
 	char *proginfo_chancommfree;    /* new in V8 */
@@ -261,11 +299,14 @@ struct cmyth_proginfo {
 	unsigned long proginfo_videoproperties; /* new in v35 */
 	unsigned long proginfo_subtitletype; /* new in v35 */
 	unsigned short proginfo_year; /* new in v43 */
+	unsigned long proginfo_partnumber; /* new in v76 */
+	unsigned long proginfo_parttotal; /* new in v76 */
 };
 
 struct cmyth_proglist {
 	cmyth_proginfo_t *proglist_list;
 	long proglist_count;
+	pthread_mutex_t proglist_mutex;
 };
 
 /*
@@ -284,7 +325,10 @@ extern int cmyth_rcv_string(cmyth_conn_t conn,
 			    int count);
 
 #define cmyth_rcv_okay __cmyth_rcv_okay
-extern int cmyth_rcv_okay(cmyth_conn_t conn, char *ok);
+extern int cmyth_rcv_okay(cmyth_conn_t conn);
+
+#define cmyth_rcv_match __cmyth_rcv_match
+extern int cmyth_rcv_match(cmyth_conn_t conn, const char *match);
 
 #define cmyth_rcv_version __cmyth_rcv_version
 extern int cmyth_rcv_version(cmyth_conn_t conn, unsigned long *vers);
@@ -379,8 +423,6 @@ extern int cmyth_rcv_recorder(cmyth_conn_t conn, int *err,
 #define cmyth_rcv_ringbuf __cmyth_rcv_ringbuf
 extern int cmyth_rcv_ringbuf(cmyth_conn_t conn, int *err, cmyth_ringbuf_t buf,
 			     int count);
-#define cmyth_datetime_to_dbstring __cmyth_datetime_to_dbstring
-extern int cmyth_datetime_to_dbstring(char *str, cmyth_timestamp_t ts);
 
 /*
  * From proginfo.c
@@ -435,9 +477,36 @@ extern int cmyth_mysql_query_param_str(cmyth_mysql_query_t * query, const char *
 
 extern char * cmyth_mysql_query_string(cmyth_mysql_query_t * query);
 
-extern int cmyth_mysql_query(cmyth_mysql_query_t * query);
-
 extern MYSQL_RES * cmyth_mysql_query_result(cmyth_mysql_query_t * query);
 #endif /* HAS_MYSQL */
+
+/*
+ * From chanlist.c
+ */
+
+extern int cmyth_recorder_add_chanlist(cmyth_recorder_t rec);
+extern cmyth_chanlist_t cmyth_chanlist_create(void);
+extern int cmyth_chanlist_add(cmyth_chanlist_t list, cmyth_channel_t channel);
+
+/*
+ * From channel.c
+ */
+
+extern cmyth_channel_t cmyth_channel_create(long id, char *name, char *sign,
+					    char *string, char *icon);
+
+extern cmyth_file_t cmyth_ringbuf_file(cmyth_recorder_t rec);
+
+extern cmyth_file_t cmyth_livetv_current_file(cmyth_recorder_t rec);
+
+extern cmyth_chain_t cmyth_chain_create(cmyth_recorder_t rec, char *chain_id);
+
+extern cmyth_file_t cmyth_chain_current_file(cmyth_chain_t chain);
+
+extern void cmyth_chain_lock(cmyth_chain_t chain);
+
+extern void cmyth_chain_unlock(cmyth_chain_t chain);
+
+extern void cmyth_chain_add_wait(cmyth_chain_t chain);
 
 #endif /* __CMYTH_LOCAL_H */

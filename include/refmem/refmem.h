@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2012, Eric Lund, Jon Gettler
+ *  Copyright (C) 2004-2013, Eric Lund, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -18,22 +18,54 @@
  */
 
 /** \file refmem.h
- * A C library for managing reference counted memory allocations
+ * A C library for managing reference counted memory allocations.
  */
 
 #ifndef __REFMEM_H
 #define __REFMEM_H
 
-#include "atomic.h"
+#include <unistd.h>
 
-/*
- * -----------------------------------------------------------------
- * Types
- * -----------------------------------------------------------------
+/**
+ * Retrieve the major version number of the library.
+ * \returns The library major version number.
  */
+extern int ref_version_major(void);
 
-/* Return current number of references outstanding for everything */
+/**
+ * Retrieve the minor version number of the library.
+ * \returns The library minor version number.
+ */
+extern int ref_version_minor(void);
+
+/**
+ * Retrieve the branch version number of the library.
+ * \returns The library branch version number.
+ */
+extern int ref_version_branch(void);
+
+/**
+ * Retrieve the fork version number of the library.
+ * \returns The library fork version number.
+ */
+extern int ref_version_fork(void);
+
+/**
+ * Retrieve the version number of the library.
+ * \returns The library version number string.
+ */
+extern const char* ref_version(void);
+
+/**
+ * Return current number of references outstanding for everything.
+ * \returns The number of references (not objects) that currently exist.
+ */
 extern int ref_get_refcount();
+
+/**
+ * Retrieve the number of references and total bytes used.
+ */
+extern void ref_get_usage(unsigned int *refs, unsigned int *bytes);
 
 /**
  * Release a reference to allocated memory.
@@ -62,11 +94,10 @@ extern char *ref_strdup(char *str);
  * \param func function name
  * \param line line number
  * \return reference counted memory
+ * \note __ref_alloc() should not be called directly.
  */
-extern void *__ref_alloc(size_t len,
-				 const char *file,
-				 const char *func,
-				 int line);
+extern void *__ref_alloc(size_t len, const char *file, const char *func,
+			 int line);
 
 /**
  * Allocate a block of reference counted memory.
@@ -74,10 +105,11 @@ extern void *__ref_alloc(size_t len,
  * \return pointer to reference counted memory block
  */
 #if defined(DEBUG)
-#define ref_alloc(l) (__ref_alloc((l), __FILE__, __FUNCTION__, __LINE__))
+#define ref_alloc(len) (__ref_alloc((len), __FILE__, __FUNCTION__, __LINE__))
 #else
-#define ref_alloc(l) (__ref_alloc((l), (char *)0, (char *)0, 0))
+#define ref_alloc(len) (__ref_alloc((len), (char *)0, (char *)0, 0))
 #endif
+
 /**
  * Reallocate reference counted memory.
  * \param p allocated memory

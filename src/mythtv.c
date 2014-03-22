@@ -40,6 +40,8 @@
 #include <atomic.h>
 #include <cmyth.h>
 
+#include <cmyth_removed.h>
+
 #include "mvpmc.h"
 #include "mythtv.h"
 #include "config.h"
@@ -1889,6 +1891,13 @@ event_start(void *arg)
 			break;
 		case CMYTH_EVENT_CLEAR_SETTINGS_CACHE:
 			printf("MythTV event CMYTH_EVENT_CLEAR_SETTINGS_CACHE\n");
+			break;
+		case CMYTH_EVENT_ERROR:
+			printf("MythTV event CMYTH_EVENT_ERROR\n");
+			sleep(1);
+			break;
+		case CMYTH_EVENT_COMMFLAG_START:
+			printf("MythTV event CMYTH_EVENT_COMMFLAG_START\n");
 			break;
 		}
 	}

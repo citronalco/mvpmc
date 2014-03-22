@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2008, Eric Lund, Jon Gettler
+ *  Copyright (C) 2004-2013, Eric Lund, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,10 +17,16 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/** \file atomic.h
+ * Atomic operations for a variety of platforms.  Use of this header file
+ * outside librefmem is \b deprecated.  This file will not be installed in
+ * future releases.
+ */
+
 #ifndef __MVP_ATOMIC_H
 #define __MVP_ATOMIC_H
 
-#ifdef __APPLE__
+#if defined(__GNUC__) && !defined(__clang__) && defined(__APPLE__)
 #pragma GCC optimization_level 0
 #endif
 
@@ -217,7 +223,7 @@ static inline int mvp_atomic_val(mvp_atomic_t *a) {
 	return *a;
 };
 
-#ifdef __APPLE__
+#if defined(__GNUC__) && !defined(__clang__) && defined(__APPLE__)
 #pragma GCC optimization_level reset
 #endif
 

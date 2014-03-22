@@ -22,7 +22,7 @@
 
 #include <refmem.h>
 #include <cmyth.h>
-
+#include <cmyth_removed.h>
 
 typedef struct mysql_config_s mysql_config_t;
 char prog_finder_hilite_char[1];		/* Current Program Finder First Character */
@@ -153,7 +153,7 @@ extern mvp_widget_t *mythtv_tvguide_tune_conflict;
 
 extern int mvp_tvguide_callback(mvp_widget_t *widget, char key);
 extern char *  get_tvguide_selected_channel_str(mvp_widget_t *proglist,
-																								cmyth_chanlist_t chanlist);
+																								cmyth_chanlist_mvpmc_deprecated_t chanlist);
 extern void
 mvp_tvguide_move(int direction, mvp_widget_t *proglist, mvp_widget_t *descr);
 extern void mvp_tvguide_video_topright(int on);
@@ -161,21 +161,21 @@ extern int mvp_tvguide_init(int edge_left, int edge_top,
 														int edge_right, int edge_bottom);
 extern int mvp_tvguide_start(void);
 extern int mvp_tvguide_stop(void);
-extern int myth_get_chan_index(cmyth_chanlist_t chanlist,
+extern int myth_get_chan_index(cmyth_chanlist_mvpmc_deprecated_t chanlist,
 															 cmyth_proginfo_t prog);
-extern int myth_get_chan_index_from_str(cmyth_chanlist_t chanlist,
+extern int myth_get_chan_index_from_str(cmyth_chanlist_mvpmc_deprecated_t chanlist,
 															 char * chan);
-extern int myth_get_chan_index_from_int(cmyth_chanlist_t chanlist,
+extern int myth_get_chan_index_from_int(cmyth_chanlist_mvpmc_deprecated_t chanlist,
 															 int nchan);
-extern int myth_is_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog,
+extern int myth_is_chan_index(cmyth_chanlist_mvpmc_deprecated_t chanlist, cmyth_proginfo_t prog,
                    						int index);
 extern cmyth_tvguide_progs_t myth_load_guide(mvp_widget_t *widget,
 												cmyth_database_t mythtv_database,
-												cmyth_chanlist_t chanlist,
+												cmyth_chanlist_mvpmc_deprecated_t chanlist,
 												cmyth_tvguide_progs_t proglist,
 												int index, int * xofs, int * yofs,
 												long free_recorders);
-extern int myth_guide_set_channels(void * widget, cmyth_chanlist_t chanlist,
+extern int myth_guide_set_channels(void * widget, cmyth_chanlist_mvpmc_deprecated_t chanlist,
 																	 int index, int yofs, long free_recorders);
 extern int myth_set_guide_times(mvp_widget_t *widget, int xofs,
 																int time_format_12);
@@ -183,7 +183,7 @@ extern void mvp_tvguide_show(mvp_widget_t *proglist, mvp_widget_t *descr,
 														 mvp_widget_t *clock);
 extern void mvp_tvguide_hide(mvp_widget_t *proglist, mvp_widget_t *descr,
 														 mvp_widget_t *clock);
-extern cmyth_chanlist_t myth_release_chanlist(cmyth_chanlist_t cl);
+extern cmyth_chanlist_mvpmc_deprecated_t myth_release_chanlist(cmyth_chanlist_mvpmc_deprecated_t cl);
 extern cmyth_tvguide_progs_t
 				myth_release_proglist(cmyth_tvguide_progs_t proglist);
 extern long myth_tvguide_get_free_cardids(cmyth_conn_t control);

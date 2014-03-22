@@ -25,6 +25,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <cmyth_local.h>
+#include <cmyth_local_removed.h>
 #include <mvp_widget.h>
 
 #define ALLOC_FRAC 10
@@ -257,7 +258,7 @@ mvp_tvguide_hide(void *proglist, void *descr, void * clock)
  * provided or greater.
  */
 int
-myth_get_chan_index_from_int(cmyth_chanlist_t chanlist, int nchan)
+myth_get_chan_index_from_int(cmyth_chanlist_mvpmc_deprecated_t chanlist, int nchan)
 {
 	int rtrn;
 
@@ -282,7 +283,7 @@ myth_get_chan_index_from_int(cmyth_chanlist_t chanlist, int nchan)
  * provided or greater.
  */
 int
-myth_get_chan_index_from_str(cmyth_chanlist_t chanlist, char * chan)
+myth_get_chan_index_from_str(cmyth_chanlist_mvpmc_deprecated_t chanlist, char * chan)
 {
 	int nchan = atoi(chan);
 
@@ -295,7 +296,7 @@ myth_get_chan_index_from_str(cmyth_chanlist_t chanlist, char * chan)
  * number and callsign.
  */
 int
-myth_get_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog)
+myth_get_chan_index(cmyth_chanlist_mvpmc_deprecated_t chanlist, cmyth_proginfo_t prog)
 {
 	int rtrn;
 
@@ -314,7 +315,7 @@ myth_get_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog)
  * 0 otherwise.
  */
 int
-myth_is_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog,
+myth_is_chan_index(cmyth_chanlist_mvpmc_deprecated_t chanlist, cmyth_proginfo_t prog,
 									 int index)
 {
 	int rtrn = 0;
@@ -332,7 +333,7 @@ myth_is_chan_index(cmyth_chanlist_t chanlist, cmyth_proginfo_t prog,
  *
  */
 static int
-get_chan_num(long chanid, cmyth_chanlist_t chanlist)
+get_chan_num(long chanid, cmyth_chanlist_mvpmc_deprecated_t chanlist)
 {
 	int i;
 
@@ -350,7 +351,7 @@ get_chan_num(long chanid, cmyth_chanlist_t chanlist)
  * provided or greater.
  */
 static char *
-myth_get_chan_str_from_int(cmyth_chanlist_t chanlist, int nchan)
+myth_get_chan_str_from_int(cmyth_chanlist_mvpmc_deprecated_t chanlist, int nchan)
 {
 	int idx = myth_get_chan_index_from_int(chanlist, nchan);
 	return chanlist->chanlist_list[idx].chanstr;
@@ -361,7 +362,7 @@ myth_get_chan_str_from_int(cmyth_chanlist_t chanlist, int nchan)
  */
 char *
 get_tvguide_selected_channel_str(mvp_widget_t *proglist,
-																 cmyth_chanlist_t chanlist)
+																 cmyth_chanlist_mvpmc_deprecated_t chanlist)
 {
 	cmyth_program_t *prog;
 
@@ -378,7 +379,7 @@ get_tvguide_selected_channel_str(mvp_widget_t *proglist,
  *
  */
 static cmyth_tvguide_progs_t
-get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
+get_tvguide_page(MYSQL *mysql, cmyth_chanlist_mvpmc_deprecated_t chanlist,
 								 cmyth_tvguide_progs_t proglist, int index,
 								 time_t start_time, time_t end_time) 
 {
@@ -575,7 +576,7 @@ get_tvguide_page(MYSQL *mysql, cmyth_chanlist_t chanlist,
 }
 
 int
-myth_guide_set_channels(void * widget, cmyth_chanlist_t chanlist,
+myth_guide_set_channels(void * widget, cmyth_chanlist_mvpmc_deprecated_t chanlist,
 												int index, int yofs,
 												long free_recorders)
 {
@@ -636,7 +637,7 @@ myth_guide_set_channels(void * widget, cmyth_chanlist_t chanlist,
  */
 cmyth_tvguide_progs_t
 myth_load_guide(void * widget, cmyth_database_t db,
-											 cmyth_chanlist_t chanlist,
+											 cmyth_chanlist_mvpmc_deprecated_t chanlist,
 											 cmyth_tvguide_progs_t proglist,
 											 int index, int * xofs, int * yofs,
 											 long free_recorders)
@@ -880,8 +881,8 @@ mythtv_guide_reset_guide_times(void)
 	guide_times_last_minutes = -1;
 }
 
-cmyth_chanlist_t
-myth_release_chanlist(cmyth_chanlist_t cl)
+cmyth_chanlist_mvpmc_deprecated_t
+myth_release_chanlist(cmyth_chanlist_mvpmc_deprecated_t cl)
 {
 	int i;
 
@@ -955,14 +956,14 @@ myth_tvguide_get_active_card(cmyth_recorder_t rec)
 /*
  *
  */
-cmyth_chanlist_t
+cmyth_chanlist_mvpmc_deprecated_t
 myth_tvguide_load_channels(cmyth_database_t db, int sort_desc)
 {
 	MYSQL *mysql;
 	MYSQL_RES *res=NULL;
 	MYSQL_ROW row;
 	char query[300];
-	cmyth_chanlist_t rtrn;
+	cmyth_chanlist_mvpmc_deprecated_t rtrn;
         
 	mysql=mysql_init(NULL);
 	PRINTF("** SSDEBUG host:%s, user:%s, password:%s\n", db->db_host,
@@ -997,7 +998,7 @@ sprintf(query, "SELECT chanid,channum,channum+0 as channumi,cardid, callsign,nam
 	 * retrieved knowing that some may be the same on multiple recorders
 	 */
 	rtrn = ref_alloc(sizeof(*rtrn));
-	rtrn->chanlist_list = (cmyth_channel_t)
+	rtrn->chanlist_list = (cmyth_channel_mvpmc_deprecated_t)
 			ref_alloc(sizeof(*(rtrn->chanlist_list))*res->row_count/ALLOC_FRAC);
 	if(!rtrn->chanlist_list) {
 		cmyth_dbg(CMYTH_DBG_ERROR, "%s: chanlist allocation failed\n", 
@@ -1012,8 +1013,8 @@ sprintf(query, "SELECT chanid,channum,channum+0 as channumi,cardid, callsign,nam
 		if(rtrn->chanlist_count == rtrn->chanlist_alloc) {
 			PRINTF("** SSDEBUG: allocating more space with count = %d and alloc =%d\n",	rtrn->chanlist_count, rtrn->chanlist_alloc);
 
-			rtrn->chanlist_list = (cmyth_channel_t)
-				ref_realloc(rtrn->chanlist_list, sizeof(struct cmyth_channel)
+			rtrn->chanlist_list = (cmyth_channel_mvpmc_deprecated_t)
+				ref_realloc(rtrn->chanlist_list, sizeof(struct cmyth_channel_mvpmc_deprecated)
 										*(rtrn->chanlist_count + res->row_count/ALLOC_FRAC));
 			if(!rtrn->chanlist_list) {
 				cmyth_dbg(CMYTH_DBG_ERROR, "%s: chanlist allocation failed\n", 

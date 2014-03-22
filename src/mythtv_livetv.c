@@ -35,7 +35,9 @@
 #include <mvp_av.h>
 #include <mvp_demux.h>
 #include <refmem.h>
+#include <atomic.h>
 #include <cmyth.h>
+#include <cmyth_removed.h>
 
 #include "mvpmc.h"
 #include "mythtv.h"
@@ -48,7 +50,7 @@
 #endif
 
 int new_live_tv;
-extern cmyth_chanlist_t tvguide_chanlist;
+extern cmyth_chanlist_mvpmc_deprecated_t tvguide_chanlist;
 extern cmyth_tvguide_progs_t tvguide_proglist;
 extern mvp_widget_t *mythtv_slow_connect;
 extern int tvguide_cur_chan_index;
@@ -138,29 +140,31 @@ livetv_compare(const void *a, const void *b)
 int
 mythtv_livetv_chain_update(char * buf)
 {
-	char * pfx = "LIVETV_CHAIN UPDATE ";
-	char * chainid = buf + strlen(pfx);
+// BERNIE: cmyth function not visible any more, commented out as livetv does not work atm anyway
+//	char * pfx = "LIVETV_CHAIN UPDATE ";
+//	char * chainid = buf + strlen(pfx);
 
 	/* Exclusive access required */
-	pthread_mutex_lock(&myth_mutex);
+//	pthread_mutex_lock(&myth_mutex);
 
 	/* Check if we've got an active recorder */
-	if(mythtv_recorder) {
-		cmyth_livetv_chain_update(mythtv_recorder, chainid, mythtv_tcp_program);
-	}
+//	if(mythtv_recorder) {
+//		cmyth_livetv_chain_update(mythtv_recorder, chainid, mythtv_tcp_program);
+//	}
 
-	pthread_mutex_unlock(&myth_mutex);
+//	pthread_mutex_unlock(&myth_mutex);
 
 	return 0;
 }
 
-static void
-prog_update_callback(cmyth_proginfo_t prog)
-{
-	cmyth_proginfo_t loc_prog = ref_hold(prog);
-	CHANGE_GLOBAL_REF(current_prog, loc_prog);
-	ref_release(loc_prog);
-}
+// BERNIE: Commented out due to compiler warnings, it's not neccessary atm because i commented out so many things in this file...
+//static void
+//prog_update_callback(cmyth_proginfo_t prog)
+//{
+//	cmyth_proginfo_t loc_prog = ref_hold(prog);
+//	CHANGE_GLOBAL_REF(current_prog, loc_prog);
+//	ref_release(loc_prog);
+//}
 
 static void
 slow_to_connect_callback(mvp_widget_t * widget)
@@ -221,9 +225,11 @@ mythtv_new_livetv_start(cmyth_recorder_t rec)
 	}
 
 	mvpw_set_timer(mythtv_slow_connect, slow_to_connect_callback, 10000);
-	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
-																prog_update_callback, &msg)) == NULL)
-		goto err;
+
+// BERNIE: cmyth function not visible any more, commented out as livetv does not work atm anyway
+//	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
+//																prog_update_callback, &msg)) == NULL)
+//		goto err;
 	mvpw_set_timer(mythtv_slow_connect, NULL, 0);
 	mvpw_hide(mythtv_slow_connect);
 
@@ -438,9 +444,10 @@ mythtv_livetv_start(int *tuner)
 	}
 
 	mvpw_set_timer(mythtv_slow_connect, slow_to_connect_callback, 10000);
-	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
-																prog_update_callback, &msg)) == NULL)
-		goto err;
+// BERNIE: cmyth function not visible any more, commented out as livetv does not work atm anyway
+//	if((rec = cmyth_spawn_live_tv(rec, 16*1024,mythtv_tcp_program,
+//																prog_update_callback, &msg)) == NULL)
+//		goto err;
 	mvpw_set_timer(mythtv_slow_connect, NULL, 0);
 	mvpw_hide(mythtv_slow_connect);
 
@@ -663,7 +670,9 @@ int __change_channel(direction)
 	av_play();
 	video_play(root);
 
-	cmyth_livetv_chain_switch_last(rec);
+// BERNIE: cmyth function not visible any more, commented out as livetv does not work atm anyway
+//	cmyth_livetv_chain_switch_last(rec);
+
 	/* This should probably be in a library or in the tvguide
 	 * source file. This is way too much code for this location.
 	 * TODO.
@@ -785,7 +794,8 @@ mythtv_channel_set(char * channame)
 	av_play();
 	video_play(root);
 
-	cmyth_livetv_chain_switch_last(rec);
+// BERNIE: cmyth function not visible any more, commented out as livetv does not work atm anyway
+//	cmyth_livetv_chain_switch_last(rec);
 
  out:
 	mvp_atomic_dec(&mythtv_prevent_request_block);

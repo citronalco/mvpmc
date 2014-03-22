@@ -13,7 +13,7 @@ toplevel = mvp['TOPLEVEL']
 
 incdir = toplevel + '/dongle/install/' + target + '/include'
 
-headers = [ 'cmyth/cmyth.h', 'mvp_av.h', 'mvp_demux.h', 'mvp_osd.h', 'mvp_widget.h',
+headers = [ 'cmyth/cmyth.h', 'cmyth/cmyth_removed.h', 'mvp_av.h', 'mvp_demux.h', 'mvp_osd.h', 'mvp_widget.h',
             'refmem/refmem.h', 'debug.h', 'refmem/atomic.h', 'rfbproto.h',
             'vncviewer.h', 'tiwlan.h' ]
 

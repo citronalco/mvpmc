@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2012, Eric Lund
+ *  Copyright (C) 2004-2013, Eric Lund
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -51,7 +51,7 @@ cmyth_file_destroy(cmyth_file_t file)
 		return;
 	}
 	if (file->file_control) {
-		pthread_mutex_lock(&mutex);
+		pthread_mutex_lock(&file->file_control->conn_mutex);
 
 		/*
 		 * Try to shut down the file transfer.  Can't do much
@@ -67,7 +67,7 @@ cmyth_file_destroy(cmyth_file_t file)
 			goto fail;
 		}
 
-		if ((err=cmyth_rcv_okay(file->file_control, "ok")) < 0) {
+		if ((err=cmyth_rcv_okay(file->file_control)) < 0) {
 			cmyth_dbg(CMYTH_DBG_ERROR,
 				  "%s: cmyth_rcv_okay() failed (%d)\n",
 				  __FUNCTION__, err);
@@ -75,7 +75,7 @@ cmyth_file_destroy(cmyth_file_t file)
 		}
 	    fail:
 		ref_release(file->file_control);
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&file->file_control->conn_mutex);
 	}
 	if (file->closed_callback) {
 	    (file->closed_callback)(file);
@@ -140,7 +140,6 @@ cmyth_file_create(cmyth_conn_t control)
 	ret->file_start = 0;
 	ret->file_length = 0;
 	ret->file_pos = 0;
-	ret->file_req = 0;
 	ret->closed_callback = NULL;
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s }\n", __FUNCTION__);
 	return ret;
@@ -272,33 +271,44 @@ cmyth_file_get_block(cmyth_file_t file, char *buf, unsigned long len)
 {
 	struct timeval tv;
 	fd_set fds;
-	int ret;
 
 	if (file == NULL || file->file_data == NULL)
 		return -EINVAL;
 
-	tv.tv_sec = 10;
-	tv.tv_usec = 0;
-	FD_ZERO(&fds);
-	FD_SET(file->file_data->conn_fd, &fds);
-	if (select((int)(file->file_data->conn_fd)+1, NULL, &fds, NULL, &tv) == 0) {
-		file->file_data->conn_hang = 1;
-		return 0;
-	} else {
-		file->file_data->conn_hang = 0;
+	while (1) {
+		int rc;
+
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		FD_ZERO(&fds);
+		FD_SET(file->file_data->conn_fd, &fds);
+		rc = select(file->file_data->conn_fd+1, NULL, &fds, NULL, &tv);
+
+		if (rc == 0) {
+			file->file_data->conn_hang = 1;
+			return 0;
+		} else if (rc < 0) {
+			if (errno == EINTR) {
+				continue;
+			} else {
+				return -errno;
+			}
+		} else {
+			file->file_data->conn_hang = 0;
+		}
+
+		rc = recv(file->file_data->conn_fd, buf, len, 0);
+
+		if (rc < 0) {
+			if (errno == EINTR) {
+				continue;
+			} else {
+				return -errno;
+			}
+		}
+
+		return rc;
 	}
-
-	ret = recv(file->file_data->conn_fd, buf, len, 0);
-
-	if(ret < 0)
-		return ret;
-
-	file->file_pos += ret;
-
-	if(file->file_pos > file->file_length)
-		file->file_length = file->file_pos;
-
-	return ret;
 }
 
 int
@@ -316,7 +326,7 @@ cmyth_file_select(cmyth_file_t file, struct timeval *timeout)
 	FD_ZERO(&fds);
 	FD_SET(fd, &fds);
 
-	ret = select((int)fd+1, &fds, NULL, NULL, timeout);
+	ret = select(fd+1, &fds, NULL, NULL, timeout);
 
 	if (ret == 0)
 		file->file_data->conn_hang = 1;
@@ -356,7 +366,7 @@ cmyth_file_request_block(cmyth_file_t file, unsigned long len)
 		return -EINVAL;
 	}
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&file->file_control->conn_mutex);
 
 #ifdef LIBCMYTH_READ_SINGLE_THREAD
 	if(len > (unsigned int)file->file_control->conn_tcp_rcvbuf)
@@ -390,11 +400,13 @@ cmyth_file_request_block(cmyth_file_t file, unsigned long len)
 		goto out;
 	}
 
-	file->file_req += c;
+	if (c > 0) {
+		file->file_pos += c;
+	}
 	ret = c;
 
     out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&file->file_control->conn_mutex);
 
 	return ret;
 }
@@ -436,19 +448,7 @@ cmyth_file_seek(cmyth_file_t file, long long offset, int whence)
 	if ((offset == 0) && (whence == SEEK_CUR))
 		return file->file_pos;
 
-	if ((offset == file->file_pos) && (whence == SEEK_SET))
-		return file->file_pos;
-
-	while(file->file_pos < file->file_req) {
-		c = file->file_req - file->file_pos;
-		if(c > sizeof(msg))
-			c = sizeof(msg);
-
-		if (cmyth_file_get_block(file, msg, (unsigned long)c) < 0)
-			return -1;
-	}
-
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&file->file_control->conn_mutex);
 
 	if (file->file_control->conn_version >= 66) {
 		/*
@@ -508,315 +508,10 @@ cmyth_file_seek(cmyth_file_t file, long long offset, int whence)
 		break;
 	}
 
-	file->file_req = file->file_pos;
-	if(file->file_pos > file->file_length)
-		file->file_length = file->file_pos;
-
 	ret = file->file_pos;
 
     out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&file->file_control->conn_mutex);
 	
 	return ret;
 }
-
-/*
- * cmyth_file_read(cmyth_recorder_t rec, char *buf, unsigned long len)
- * 
- * Scope: PUBLIC
- *
- * Description
- *
- * Request and read a block of data from backend
- *
- * Return Value:
- *
- * Sucess: number of bytes transfered
- *
- * Failure: an int containing -errno
- */
-int cmyth_file_read(cmyth_file_t file, char *buf, unsigned long len)
-{
-	int err, count;
-	int ret, req, nfds, rec;
-	char *end, *cur;
-	char msg[256];
-	int64_t len64;
-	struct timeval tv;
-	fd_set fds;
-
-	if (!file || !file->file_data) {
-		cmyth_dbg (CMYTH_DBG_ERROR, "%s: no connection\n",
-		           __FUNCTION__);
-		return -EINVAL;
-	}
-	if (len == 0)
-		return 0;
-
-	pthread_mutex_lock (&mutex);
-
-	/* make sure we have outstanding requests that fill the buffer that was called with */
-	/* this way we should be able to saturate the network connection better */
-	if (file->file_req < file->file_pos + len) {
-
-		snprintf (msg, sizeof (msg),
-	            "QUERY_FILETRANSFER %ld[]:[]REQUEST_BLOCK[]:[]%ld",
-	            file->file_id, (unsigned long)(file->file_pos + len - file->file_req));
-
-		if ( (err = cmyth_send_message (file->file_control, msg) ) < 0) {
-			cmyth_dbg (CMYTH_DBG_ERROR,
-			           "%s: cmyth_send_message() failed (%d)\n",
-			           __FUNCTION__, err);
-			ret = err;
-			goto out;
-		}
-		req = 1;
-	} else {
-		req = 0;
-	}
-
-	rec = 0;
-	cur = buf;
-	end = buf+len;
-
-	while (cur == buf || req || rec) {
-		if(rec) {
-			tv.tv_sec =  0;
-			tv.tv_usec = 0;
-		} else {
-			tv.tv_sec = 20;
-			tv.tv_usec = 0;
-		}
-		nfds = 0;
-
-		FD_ZERO (&fds);
-		if (req) {
-			if ((int)file->file_control->conn_fd > nfds)
-				nfds = (int)file->file_control->conn_fd;
-			FD_SET (file->file_control->conn_fd, &fds);
-		}
-		if ((int)file->file_data->conn_fd > nfds)
-			nfds = (int)file->file_data->conn_fd;
-		FD_SET (file->file_data->conn_fd, &fds);
-
-		if ((ret = select (nfds+1, &fds, NULL, NULL,&tv)) < 0) {
-			cmyth_dbg (CMYTH_DBG_ERROR,
-			           "%s: select(() failed (%d)\n",
-			           __FUNCTION__, ret);
-			goto out;
-		}
-
-		if (ret == 0 && !rec) {
-			file->file_control->conn_hang = 1;
-			file->file_data->conn_hang = 1;
-			ret = -ETIMEDOUT;
-			goto out;
-		}
-
-		/* check control connection */
-		if (FD_ISSET(file->file_control->conn_fd, &fds)) {
-
-			if ((count=cmyth_rcv_length (file->file_control)) < 0) {
-				cmyth_dbg (CMYTH_DBG_ERROR,
-				           "%s: cmyth_rcv_length() failed (%d)\n",
-				           __FUNCTION__, count);
-				ret = count;
-				goto out;
-			}
-
-			/*
-			 * MythTV originally sent back a signed 32bit value but was changed to a
-			 * signed 64bit value in http://svn.mythtv.org/trac/changeset/18011 (1-Aug-2008).
-			 *
-			 * libcmyth now retrieves the 64-bit signed value, does error-checking,
-			 * and then converts to a 32bit unsigned.
-			 *
-			 * This rcv_ method needs to be forced to use new_int64 to pull back a
-			 * single 64bit number otherwise the handling in rcv_int64 will revert to
-			 * the old two 32bit hi and lo long values.
-			 */
-			if ((ret=cmyth_rcv_new_int64 (file->file_control, &err, &len64, count, 1))< 0) {
-				cmyth_dbg (CMYTH_DBG_ERROR,
-				           "%s: cmyth_rcv_new_int64() failed (%d)\n",
-				           __FUNCTION__, ret);
-				ret = err;
-				goto out;
-			}
-			if (len64 >= 0x100000000LL || len64 < 0) {
-				/* -1 seems to be a common result, but isn't valid so use 0 instead. */
-				cmyth_dbg (CMYTH_DBG_WARN,
-				           "%s: cmyth_rcv_new_int64() returned out of bound value (%"PRId64"). Using 0 instead.\n",
-				           __FUNCTION__, len64);
-				len64 = 0;
-			}
-			len = (unsigned long)len64;
-			req = 0;
-			file->file_req += len;
-
-			if (file->file_req < file->file_pos) {
-				cmyth_dbg (CMYTH_DBG_ERROR,
-				           "%s: received invalid invalid length, read position is ahead of request (req: %"PRIu64", pos: %"PRIu64", len: %"PRId64")\n",
-				           __FUNCTION__, file->file_req, file->file_pos, len64);
-				ret = -1;
-				goto out;
-			}
-
-
-			/* check if we are already done */
-			if (file->file_pos == file->file_req)
-				break;
-		}
-
-		/* restore direct request fleg */
-		rec = 0;
-
-		/* check data connection */
-		if (FD_ISSET(file->file_data->conn_fd, &fds)) {
-			if (end < cur) {
-				cmyth_dbg (CMYTH_DBG_ERROR,
-				           "%s: positions invalid on read, bailing out (cur: %x, end: %x)\n",
-				           __FUNCTION__, cur, end);
-				ret = -1;
-				goto out;
-			}
-			if ((ret = recv (file->file_data->conn_fd, cur, (int)(end-cur), 0)) < 0) {
-				cmyth_dbg (CMYTH_DBG_ERROR,
-				           "%s: recv() failed (%d)\n",
-				           __FUNCTION__, ret);
-				goto out;
-			}
-			cur += ret;
-			file->file_pos += ret;
-			if(ret)
-				rec = 1; /* attempt to read directly again to get all queued packets */
-		}
-	}
-
-	/* make sure file grows, as we move past length */
-	if (file->file_pos > file->file_length)
-		file->file_length = file->file_pos;
-
-	ret = (int)(cur - buf);
-out:
-	pthread_mutex_unlock (&mutex);
-	return ret;
-}
-
-#ifdef _MSC_VER
-
-struct errentry {
-    unsigned long oscode;           /* OS return value */
-    int errnocode;  /* System V error code */
-};
-
-static struct errentry errtable[] = {
-  {  ERROR_INVALID_FUNCTION,       EINVAL    },  /* 1 */
-  {  ERROR_FILE_NOT_FOUND,         ENOENT    },  /* 2 */
-  {  ERROR_PATH_NOT_FOUND,         ENOENT    },  /* 3 */
-  {  ERROR_TOO_MANY_OPEN_FILES,    EMFILE    },  /* 4 */
-  {  ERROR_ACCESS_DENIED,          EACCES    },  /* 5 */
-  {  ERROR_INVALID_HANDLE,         EBADF     },  /* 6 */
-  {  ERROR_ARENA_TRASHED,          ENOMEM    },  /* 7 */
-  {  ERROR_NOT_ENOUGH_MEMORY,      ENOMEM    },  /* 8 */
-  {  ERROR_INVALID_BLOCK,          ENOMEM    },  /* 9 */
-  {  ERROR_BAD_ENVIRONMENT,        E2BIG     },  /* 10 */
-  {  ERROR_BAD_FORMAT,             ENOEXEC   },  /* 11 */
-  {  ERROR_INVALID_ACCESS,         EINVAL    },  /* 12 */
-  {  ERROR_INVALID_DATA,           EINVAL    },  /* 13 */
-  {  ERROR_INVALID_DRIVE,          ENOENT    },  /* 15 */
-  {  ERROR_CURRENT_DIRECTORY,      EACCES    },  /* 16 */
-  {  ERROR_NOT_SAME_DEVICE,        EXDEV     },  /* 17 */
-  {  ERROR_NO_MORE_FILES,          ENOENT    },  /* 18 */
-  {  ERROR_LOCK_VIOLATION,         EACCES    },  /* 33 */
-  {  ERROR_BAD_NETPATH,            ENOENT    },  /* 53 */
-  {  ERROR_NETWORK_ACCESS_DENIED,  EACCES    },  /* 65 */
-  {  ERROR_BAD_NET_NAME,           ENOENT    },  /* 67 */
-  {  ERROR_FILE_EXISTS,            EEXIST    },  /* 80 */
-  {  ERROR_CANNOT_MAKE,            EACCES    },  /* 82 */
-  {  ERROR_FAIL_I24,               EACCES    },  /* 83 */
-  {  ERROR_INVALID_PARAMETER,      EINVAL    },  /* 87 */
-  {  ERROR_NO_PROC_SLOTS,          EAGAIN    },  /* 89 */
-  {  ERROR_DRIVE_LOCKED,           EACCES    },  /* 108 */
-  {  ERROR_BROKEN_PIPE,            EPIPE     },  /* 109 */
-  {  ERROR_DISK_FULL,              ENOSPC    },  /* 112 */
-  {  ERROR_INVALID_TARGET_HANDLE,  EBADF     },  /* 114 */
-  {  ERROR_INVALID_HANDLE,         EINVAL    },  /* 124 */
-  {  ERROR_WAIT_NO_CHILDREN,       ECHILD    },  /* 128 */
-  {  ERROR_CHILD_NOT_COMPLETE,     ECHILD    },  /* 129 */
-  {  ERROR_DIRECT_ACCESS_HANDLE,   EBADF     },  /* 130 */
-  {  ERROR_NEGATIVE_SEEK,          EINVAL    },  /* 131 */
-  {  ERROR_SEEK_ON_DEVICE,         EACCES    },  /* 132 */
-  {  ERROR_DIR_NOT_EMPTY,          ENOTEMPTY },  /* 145 */
-  {  ERROR_NOT_LOCKED,             EACCES    },  /* 158 */
-  {  ERROR_BAD_PATHNAME,           ENOENT    },  /* 161 */
-  {  ERROR_MAX_THRDS_REACHED,      EAGAIN    },  /* 164 */
-  {  ERROR_LOCK_FAILED,            EACCES    },  /* 167 */
-  {  ERROR_ALREADY_EXISTS,         EEXIST    },  /* 183 */
-  {  ERROR_FILENAME_EXCED_RANGE,   ENOENT    },  /* 206 */
-  {  ERROR_NESTING_NOT_ALLOWED,    EAGAIN    },  /* 215 */
-  {  ERROR_NOT_ENOUGH_QUOTA,       ENOMEM    }    /* 1816 */
-};
-
-/* size of the table */
-#define ERRTABLESIZE (sizeof(errtable)/sizeof(errtable[0]))
-
-/* The following two constants must be the minimum and maximum
-   values in the (contiguous) range of Exec Failure errors. */
-#define MIN_EXEC_ERROR ERROR_INVALID_STARTING_CODESEG
-#define MAX_EXEC_ERROR ERROR_INFLOOP_IN_RELOC_CHAIN
-
-/* These are the low and high value in the range of errors that are
-   access violations */
-#define MIN_EACCES_RANGE ERROR_WRITE_PROTECT
-#define MAX_EACCES_RANGE ERROR_SHARING_BUFFER_EXCEEDED
-
-
-/***
- *void _dosmaperr(oserrno) - Map function number
- *
- *Purpose:
- *       This function takes an OS error number, and maps it to the
- *       corresponding errno value (based on UNIX System V values). The
- *       OS error number is stored in _doserrno (and the mapped value is
- *       stored in errno)
- *
- *Entry:
- *       ULONG oserrno = OS error value
- *
- *Exit:
- *       sets _doserrno and errno.
- *
- *Exceptions:
- *
- *******************************************************************************/
-
-void __cdecl _dosmaperr (
-  unsigned long oserrno
-  )
-{
-  int i;
-  
-  _doserrno = oserrno;        /* set _doserrno */
-  
-  /* check the table for the OS error code */
-  for (i = 0; i < ERRTABLESIZE; ++i) {
-    if (oserrno == errtable[i].oscode) {
-      errno = errtable[i].errnocode;
-      return;
-    }
-  }
-  
-  /* The error code wasn't in the table.  We check for a range of */
-  /* EACCES errors or exec failure errors (ENOEXEC).  Otherwise   */
-  /* EINVAL is returned.                                          */
-  
-  if (oserrno >= MIN_EACCES_RANGE && oserrno <= MAX_EACCES_RANGE)
-    errno = EACCES;
-  else if (oserrno >= MIN_EXEC_ERROR && oserrno <= MAX_EXEC_ERROR)
-    errno = ENOEXEC;
-  else
-    errno = EINVAL;
-}
-
-#endif
-
