@@ -1019,7 +1019,7 @@ get_livetv_programs_rec(int id, struct livetv_prog **list, int *n, int *p)
 	char *start_channame = NULL, *chansign = NULL;
 	char *description = NULL;
 	char *start, *end, *ptr;
-	char tsbuf[256];
+	char *tsbuf;
 	int cur_id, i; 
 	int shows = 0, unique = 0, busy = 0;
 	struct livetv_proginfo *pi;
@@ -1102,7 +1102,7 @@ get_livetv_programs_rec(int id, struct livetv_prog **list, int *n, int *p)
 
 		ts = cmyth_proginfo_start(next_prog);
 		if (ts != NULL ) {
-			cmyth_timestamp_to_string(tsbuf, ts);
+			tsbuf = cmyth_timestamp_string(ts);
 			ref_release(ts);
 			ptr = strchr(tsbuf, 'T');
 			*ptr = '\0';
@@ -1111,7 +1111,7 @@ get_livetv_programs_rec(int id, struct livetv_prog **list, int *n, int *p)
 		}
 		ts = cmyth_proginfo_end(next_prog);
 		if (ts != NULL ) {
-			cmyth_timestamp_to_string(tsbuf, ts);
+			tsbuf = cmyth_timestamp_string(ts);
 			ref_release(ts);
 			ptr = strchr(tsbuf, 'T');
 			*ptr = '\0';

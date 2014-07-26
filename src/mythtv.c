@@ -252,7 +252,7 @@ mythtv_video_key(char key)
 	long long offset=0;
 	long long dbmark=0;
 	cmyth_conn_t ctrl=ref_hold(control);
-	char starttime[24];
+	char *starttime;
 	int mode=0;
 	mode=av_get_mode();
 	//fprintf(stderr, "VIDEO MODE = %d\n",mode);
@@ -281,7 +281,7 @@ mythtv_video_key(char key)
 		case MVPW_KEY_BLUE: //get bookmark
 			if ((mark=cmyth_get_bookmark(ctrl,current_prog)) >0) {
 				chanid=cmyth_proginfo_chan_id(current_prog);
-				cmyth_timestamp_to_string(starttime,cmyth_proginfo_rec_start(current_prog));
+				starttime=cmyth_timestamp_string(cmyth_proginfo_rec_start(current_prog));
 				if ((offset = cmyth_get_bookmark_offset(mythtv_database,chanid,mark,starttime,mode)) <0) {
 					fprintf(stderr,"No offset found in recordedseek chanid=%ld mark=%qd\n",chanid,mark);
 					if (!mythtv_disable_bookmark_osd) display_bookmark_status_osd(4);
@@ -1404,7 +1404,8 @@ pending_hilite_callback(mvp_widget_t *widget,
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) {\n",
 		    __FUNCTION__, __FILE__, __LINE__);
 	if (hilite) {
-		char start[256], end[256], str[256];
+		char str[256];
+		char *start, *end;
 		char *description, *channame, *ptr;
 		cmyth_timestamp_t ts;
 		cmyth_proginfo_rec_status_t status;
@@ -1418,10 +1419,10 @@ pending_hilite_callback(mvp_widget_t *widget,
 		description = (char*)cmyth_proginfo_description(prog);
 		channame = (char*)cmyth_proginfo_channame(prog);
 		ts = cmyth_proginfo_rec_start(prog);
-		cmyth_timestamp_to_display_string(start, ts, mythtv_use_12hour_clock);
+		start = cmyth_timestamp_display_string(ts, mythtv_use_12hour_clock);
 		ref_release(ts);
 		ts = cmyth_proginfo_rec_end(prog);
-		cmyth_timestamp_to_display_string(end, ts, mythtv_use_12hour_clock);
+		end = cmyth_timestamp_display_string(ts, mythtv_use_12hour_clock);
 		ref_release(ts);
 
 		ptr = strchr(start, 'T');
@@ -1580,7 +1581,7 @@ mythtv_pending_filter(mvp_widget_t *widget, mythtv_filter_t filter)
 		int year, month, day, hour, minute;
 		long card_id;
 		char *type;
-		char start[256], end[256];
+		char *start, *end;
 		char buf[256], card[16];
 		char *ptr;
 		int display = 0;
@@ -1592,10 +1593,10 @@ mythtv_pending_filter(mvp_widget_t *widget, mythtv_filter_t filter)
 		subtitle = (char*)cmyth_proginfo_subtitle(prog);
 
 		ts = cmyth_proginfo_rec_start(prog);
-		cmyth_timestamp_to_string(start, ts);
+		start = cmyth_timestamp_string(ts);
 
 		te = cmyth_proginfo_rec_end(prog);
-		cmyth_timestamp_to_string(end, te);
+		end = cmyth_timestamp_string(te);
 
 		ref_release(ts);
 		ref_release(te);
@@ -2197,9 +2198,9 @@ mythtv_init(char *server_name, int portnum, mysql_config_t * mysql)
 void
 mythtv_program(mvp_widget_t *widget)
 {
-	char *program;
+	char *program, *start, *end;
 	cmyth_timestamp_t ts;
-	char start[256], end[256], str[256], *ptr, *chansign;
+	char str[256], *ptr, *chansign;
 	cmyth_proginfo_t loc_prog = ref_hold(current_prog);
 		
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) {\n",
@@ -2214,10 +2215,10 @@ mythtv_program(mvp_widget_t *widget)
 			chansign = (char*)cmyth_proginfo_chansign(loc_prog);
 			
 			ts = cmyth_proginfo_start(loc_prog);
-			cmyth_timestamp_to_display_string(start, ts, mythtv_use_12hour_clock);
+			start = cmyth_timestamp_display_string(ts,mythtv_use_12hour_clock);
 			ref_release(ts);
 			ts = cmyth_proginfo_end(loc_prog);
-			cmyth_timestamp_to_display_string(end, ts, mythtv_use_12hour_clock);
+			end = cmyth_timestamp_display_string(ts,mythtv_use_12hour_clock);
 			ref_release(ts);
 		
 			ptr = strchr(start, 'T');
@@ -2321,7 +2322,7 @@ int
 mythtv_proginfo(char *buf, int size)
 {
 	cmyth_timestamp_t ts;
-	char airdate[256], start[256], end[256];
+	char *airdate, *start, *end;
 	char *ptr;
 	char *title, *subtitle, *description, *category, *channame;
 	char *seriesid, *programid, *stars, *recgroup;
@@ -2330,13 +2331,13 @@ mythtv_proginfo(char *buf, int size)
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) {\n",
 		    __FUNCTION__, __FILE__, __LINE__);
 	ts = cmyth_proginfo_originalairdate(hi_prog);
-	cmyth_timestamp_to_display_string(airdate, ts, mythtv_use_12hour_clock);
+	airdate = cmyth_timestamp_display_string(ts, mythtv_use_12hour_clock);
 	ref_release(ts);
 	ts = cmyth_proginfo_rec_start(hi_prog);
-	cmyth_timestamp_to_display_string(start, ts, mythtv_use_12hour_clock);
+	start = cmyth_timestamp_display_string(ts, mythtv_use_12hour_clock);
 	ref_release(ts);
 	ts = cmyth_proginfo_rec_end(hi_prog);
-	cmyth_timestamp_to_display_string(end, ts, mythtv_use_12hour_clock);
+	end = cmyth_timestamp_display_string(ts, mythtv_use_12hour_clock);
 	ref_release(ts);
 
 	if ((ptr=strchr(airdate, 'T')) != NULL)
