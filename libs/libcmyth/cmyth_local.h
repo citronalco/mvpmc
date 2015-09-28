@@ -191,7 +191,6 @@ struct cmyth_file {
 	cmyth_conn_t file_data;		/**< backend connection */
 	long file_id;			/**< file identifier */
 	/** callback when close is completed */
-	void (*closed_callback)(cmyth_file_t file);
 	uint64_t file_start;	/**< file start offest */
 	uint64_t file_length;	/**< file length */
 	uint64_t file_pos;	/**< current file position */

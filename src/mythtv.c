@@ -539,22 +539,6 @@ mythtv_shutdown(int display)
 }
 
 
-/* Called as a callback by cmyth_file_destroy when it's complete */
-static void
-mythtv_close_complete(cmyth_file_t file)
-{
-	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) {\n",
-		    __FUNCTION__, __FILE__, __LINE__);
-	/* Signal main close_file function that it can bail */
-	pthread_mutex_lock(&close_file_mutex);
-	mythtv_close_file_state = 0;
-	pthread_cond_broadcast(&close_file_cond);
-	pthread_mutex_unlock(&close_file_mutex);
-
-	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) }\n",
-		    __FUNCTION__, __FILE__, __LINE__);
-}
-
 /* Set mythtv_file to NULL and block until it's closed */
 static void
 mythtv_close_just_file(void)
@@ -571,7 +555,6 @@ mythtv_close_just_file(void)
 		mvp_atomic_inc(&mythtv_prevent_request_block);
 		pthread_mutex_lock(&request_block_mutex);
 		mythtv_close_file_state = 1;
-		cmyth_file_set_closed_callback(mythtv_file,mythtv_close_complete);
 		CHANGE_GLOBAL_REF(mythtv_file, NULL);
 		pthread_mutex_lock(&close_file_mutex);
 		while(mythtv_close_file_state)

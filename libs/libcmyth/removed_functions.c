@@ -40,14 +40,6 @@
  * signalled as done. Passing in NULL means no callback.
  */
 
-void cmyth_file_set_closed_callback(cmyth_file_t file, void (*callback)(cmyth_file_t))
-{
- if(!file)
- return;
- file->closed_callback = callback;
-}
-
-
 
 /* proginfo.c */
 int
