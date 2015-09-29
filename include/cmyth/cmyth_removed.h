@@ -27,10 +27,6 @@ typedef struct cmyth_tvguide_progs *cmyth_tvguide_progs_t;
 #define CMYTH_NUM_SORTS 2
 #define PROGRAM_ADJUST 3600
 
-
-extern void cmyth_file_set_closed_callback(cmyth_file_t file,
- void (*callback)(cmyth_file_t));
-
 extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
 
 /**
