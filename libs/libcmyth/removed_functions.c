@@ -43,7 +43,7 @@
 
 /* proginfo.c */
 int
-cmyth_get_delete_list(cmyth_conn_t conn, char * msg, cmyth_proglist_t prog)
+cmyth_get_delete_list_deprecated(cmyth_conn_t conn, char * msg, cmyth_proglist_t prog)
 {
  int err=0;
  int count;

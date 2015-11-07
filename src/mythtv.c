@@ -4582,7 +4582,7 @@ run_mythtv_utils_delrecordings(mvp_widget_t *widget)
 		goto out;
 	}
 	ctrl = ref_hold(control);
-	if ( (error=cmyth_get_delete_list(ctrl,"QUERY_RECORDINGS Delete", prog)<0)) {
+	if ( (error=cmyth_get_delete_list_deprecated(ctrl,"QUERY_RECORDINGS Delete", prog)<0)) {
 		cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) -1)\n",
 			__FUNCTION__, __FILE__, __LINE__); 
 		snprintf(buf, sizeof(buf),"Mythtv Server Error\n" );

@@ -27,7 +27,7 @@ typedef struct cmyth_tvguide_progs *cmyth_tvguide_progs_t;
 #define CMYTH_NUM_SORTS 2
 #define PROGRAM_ADJUST 3600
 
-extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
+extern int cmyth_get_delete_list_deprecated(cmyth_conn_t, char *, cmyth_proglist_t);
 
 /**
  * Retrieve the tuner type of a recorder.
