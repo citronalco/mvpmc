@@ -378,9 +378,9 @@ get_tvguide_selected_channel_str(mvp_widget_t *proglist,
 /*
  *
  */
-static cmyth_tvguide_progs_t
+static cmyth_tvguide_progs_deprecated_t
 get_tvguide_page(MYSQL *mysql, cmyth_chanlist_mvpmc_deprecated_t chanlist,
-								 cmyth_tvguide_progs_t proglist, int index,
+								 cmyth_tvguide_progs_deprecated_t proglist, int index,
 								 time_t start_time, time_t end_time) 
 {
 	MYSQL_RES *res=NULL;
@@ -635,10 +635,10 @@ myth_guide_set_channels(void * widget, cmyth_chanlist_mvpmc_deprecated_t chanlis
  * For testing, this function just loads the view that we need to
  * look at.
  */
-cmyth_tvguide_progs_t
+cmyth_tvguide_progs_deprecated_t
 myth_load_guide(void * widget, cmyth_database_t db,
 											 cmyth_chanlist_mvpmc_deprecated_t chanlist,
-											 cmyth_tvguide_progs_t proglist,
+											 cmyth_tvguide_progs_deprecated_t proglist,
 											 int index, int * xofs, int * yofs,
 											 long free_recorders)
 {
@@ -646,7 +646,7 @@ myth_load_guide(void * widget, cmyth_database_t db,
 	int i, j, k, m, prev;
 	time_t curtime, nexttime;
 	struct  tm now, later;
-	cmyth_tvguide_progs_t rtrn = proglist;
+	cmyth_tvguide_progs_deprecated_t rtrn = proglist;
 	cmyth_program_t * prog;
 
 	PRINTF("** SSDEBUG: request to load guide: %d\n", index);
@@ -661,7 +661,7 @@ myth_load_guide(void * widget, cmyth_database_t db,
 	 * changed to use the standard methodology.
 	 */
 	if(!proglist) {
-		proglist = (cmyth_tvguide_progs_t) ref_alloc(sizeof(*proglist));
+		proglist = (cmyth_tvguide_progs_deprecated_t) ref_alloc(sizeof(*proglist));
 		proglist->progs =
 			ref_alloc(sizeof(*(proglist->progs)) * 3 * 4);
 		proglist->count = 0;
@@ -896,8 +896,8 @@ myth_release_chanlist(cmyth_chanlist_mvpmc_deprecated_t cl)
 	return NULL;
 }
 
-cmyth_tvguide_progs_t
-myth_release_proglist(cmyth_tvguide_progs_t proglist)
+cmyth_tvguide_progs_deprecated_t
+myth_release_proglist(cmyth_tvguide_progs_deprecated_t proglist)
 {
 	if(proglist) {
 		ref_release(proglist->progs);

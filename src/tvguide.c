@@ -100,7 +100,7 @@ static auto_tune_state_s auto_tune_state = {
 
 extern int showing_guide;
 cmyth_chanlist_mvpmc_deprecated_t tvguide_chanlist = NULL;
-cmyth_tvguide_progs_t tvguide_proglist = NULL;
+cmyth_tvguide_progs_deprecated_t tvguide_proglist = NULL;
 static auto_tune_list_t auto_tune_list = NULL;
 int tvguide_cur_chan_index;
 int tvguide_scroll_ofs_x = 0;

@@ -21,8 +21,8 @@ extern cmyth_chanlist_mvpmc_deprecated_t myth_tvguide_load_channels(cmyth_databa
 /* Below: removed from cmyth on 2014-05-08 */
 /******************************************************************************/
 
-struct cmyth_tvguide_progs;
-typedef struct cmyth_tvguide_progs *cmyth_tvguide_progs_t;
+struct cmyth_tvguide_progs_deprecated;
+typedef struct cmyth_tvguide_progs_deprecated *cmyth_tvguide_progs_deprecated_t;
 
 #define CMYTH_NUM_SORTS 2
 #define PROGRAM_ADJUST 3600

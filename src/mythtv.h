@@ -169,10 +169,10 @@ extern int myth_get_chan_index_from_int(cmyth_chanlist_mvpmc_deprecated_t chanli
 															 int nchan);
 extern int myth_is_chan_index(cmyth_chanlist_mvpmc_deprecated_t chanlist, cmyth_proginfo_t prog,
                    						int index);
-extern cmyth_tvguide_progs_t myth_load_guide(mvp_widget_t *widget,
+extern cmyth_tvguide_progs_deprecated_t myth_load_guide(mvp_widget_t *widget,
 												cmyth_database_t mythtv_database,
 												cmyth_chanlist_mvpmc_deprecated_t chanlist,
-												cmyth_tvguide_progs_t proglist,
+												cmyth_tvguide_progs_deprecated_t proglist,
 												int index, int * xofs, int * yofs,
 												long free_recorders);
 extern int myth_guide_set_channels(void * widget, cmyth_chanlist_mvpmc_deprecated_t chanlist,
@@ -184,8 +184,8 @@ extern void mvp_tvguide_show(mvp_widget_t *proglist, mvp_widget_t *descr,
 extern void mvp_tvguide_hide(mvp_widget_t *proglist, mvp_widget_t *descr,
 														 mvp_widget_t *clock);
 extern cmyth_chanlist_mvpmc_deprecated_t myth_release_chanlist(cmyth_chanlist_mvpmc_deprecated_t cl);
-extern cmyth_tvguide_progs_t
-				myth_release_proglist(cmyth_tvguide_progs_t proglist);
+extern cmyth_tvguide_progs_deprecated_t
+				myth_release_proglist(cmyth_tvguide_progs_deprecated_t proglist);
 extern long myth_tvguide_get_free_cardids(cmyth_conn_t control);
 extern long myth_tvguide_get_active_card(cmyth_recorder_t rec);
 extern int mvp_tvguide_sql_check(cmyth_database_t db);

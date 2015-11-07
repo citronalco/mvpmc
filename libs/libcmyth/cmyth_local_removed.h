@@ -6,7 +6,7 @@
 #include <cmyth_removed.h>
 
 /* Sergio: Added to support the tvguide functionality */
-struct cmyth_tvguide_progs {
+struct cmyth_tvguide_progs_deprecated {
        cmyth_program_t * progs;
        int count;
        int alloc;
