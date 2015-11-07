@@ -1324,7 +1324,7 @@ mythtv_new_livetv(void)
 	/* Get the first available recorder for live tv */
 	for (i=0; i<MAX_TUNER; i++) {
 		if ((rec = cmyth_conn_get_recorder_from_num(ctrl, i+1)) != NULL) {
-			if ( (cmyth_recorder_is_recording(rec) == 0) && (cmyth_tuner_type_check(mythtv_database,rec,mythtv_check_tuner_type))) 
+			if ( (cmyth_recorder_is_recording(rec) == 0) && (cmyth_tuner_type_check_deprecated(mythtv_database,rec,mythtv_check_tuner_type))) 
 				break;
 			else
 				ref_release(rec);

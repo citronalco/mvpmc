@@ -33,6 +33,6 @@ extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
  * Retrieve the tuner type of a recorder.
  * \deprecated This function seems quite useless.
  */
-extern int cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_enabled);
+extern int cmyth_tuner_type_check_deprecated(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_enabled);
 
 #endif

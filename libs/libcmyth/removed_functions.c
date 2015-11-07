@@ -69,7 +69,7 @@ cmyth_get_delete_list(cmyth_conn_t conn, char * msg, cmyth_proglist_t prog)
 
 /* mythtv_mysql.c */
 int
-cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_type) {
+cmyth_tuner_type_check_deprecated(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_type) {
  MYSQL_RES *res=NULL;
  MYSQL_ROW row;
  const char * query_str = "SELECT cardtype from capturecard WHERE cardid=?";
