@@ -16,6 +16,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+ 
+/*
+  start vlc with:
+    LANG=C vlc -I telnet --telnet-password admin --telnet-host 0.0.0.0
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -59,16 +65,20 @@ extern char *vlc_server;	// main.c
 extern int http_main(void); 	// audio.c
 
 /* VLC command for audio transcoding to mp3 */
-#define VLC_MP3_TRANSCODE "setup mvpmc output #transcode{acodec=mp3,ab=%d,channels=2}:duplicate{dst=std{access=http,mux=raw,url=:%s}}\r\n"
+#define VLC_MP3_TRANSCODE "setup mvpmc output #transcode{acodec=mp3,ab=%d,channels=2,samplerate=44100}:duplicate{dst=std{access=http{mime=audio/mpeg},mux=raw,url=:%s}}\r\n"
 
 /* VLC command for audio transcoding to flac */
-#define VLC_FLAC_TRANSCODE "setup mvpmc output #transcode{acodec=flac,channels=2}:duplicate{dst=std{access=http,mux=raw,url=:%s}}\r\n"
+#define VLC_FLAC_TRANSCODE "setup mvpmc output #transcode{acodec=flac,channels=2,samplerate=44100}:duplicate{dst=std{access=http{mime=audio/flac},mux=raw,url=:%s}}\r\n"
 
 /* VLC command for video/audio transcode to mpeg 2 */
-#define VLC_VIDEO_TRANSCODE "setup mvpmc output #transcode{vcodec=mp2v,vb=%d,venc=ffmpeg{keyint=3},scale=1,audio-sync,soverlay,deinterlace,width=%s,height=%s,canvas-width=%s,canvas-height=%s,canvas-aspect=%s,fps=%s,acodec=mpga,ab=%d,channels=2}:duplicate{dst=std{access=http,mux=ts,dst=:%s}}\r\n"
+/* old, VLC < 0.9 */
+/* #define VLC_VIDEO_TRANSCODE "setup mvpmc output #transcode{vcodec=mp2v,vb=%d,venc=ffmpeg{keyint=3},scale=1,audio-sync,soverlay,deinterlace,width=%s,height=%s,canvas-width=%s,canvas-height=%s,canvas-aspect=%s,fps=%s,acodec=mpga,ab=%d,channels=2}:duplicate{dst=std{access=http,mux=ts,dst=:%s}}\r\n" */
+/* new, VLC >= 0.9 */
+//#define VLC_VIDEO_TRANSCODE "setup mvpmc output #transcode{vcodec=mp2v,vb=%d,venc=ffmpeg{keyint=3},scale=1,audio-sync,soverlay,deinterlace,width=%s,height=%s,vfilter=canvas{width=%s,height=%s,aspect=%s},fps=%s,acodec=mpga,ab=%d,channels=2,samplerate=44100}:duplicate{dst=std{access=http,mux=ts,dst=:%s}}\r\n"
+#define VLC_VIDEO_TRANSCODE "setup mvpmc output #transcode{vcodec=mp1v,vb=%d,venc=ffmpeg{keyint=3},scale=1,audio-sync,soverlay,deinterlace,width=%s,height=%s,vfilter=canvas{width=%s,height=%s,aspect=%s},fps=%s,acodec=mpga,ab=%d,channels=2,samplerate=44100}:std{access=http{mime=video/mpeg},mux=ts,dst=:%s}\r\n"
 
 /* VLC command video/audio transcode to mpeg 2 without scaling */
-#define VLC_VIDEO_NOSCALE_TRANSCODE "setup mvpmc output #transcode{vcodec=mp2v,vb=%d,scale=1,fps=%s,acodec=mpga,ab=%d,channels=2}:duplicate{dst=std{access=http,mux=ts,dst=:%s}}\r\n"
+#define VLC_VIDEO_NOSCALE_TRANSCODE "setup mvpmc output #transcode{vcodec=mp2v,vb=%d,scale=1,fps=%s,acodec=mpga,ab=%d,channels=2,samplerate=44100}:duplicate{dst=std{access=http{mime=video/mpeg},mux=ts,dst=:%s}}\r\n"
 
 /* The number of calls vlc_get_pct_pos will receive before it updates the cached position */
 #define OSD_UPDATE_CALLS 5
@@ -565,7 +575,7 @@ int vlc_connect(FILE *outlog,const char *url,int ContentType, int VlcCommandType
 				    // extract the 'position : p' value
 				    vpos = strstr(line_data, "position : ");
 				    if (vpos == NULL) {
-					VLC_LOG_STDOUT("VLC: couln't find 'position : '");
+					VLC_LOG_FILE("VLC: couln't find 'position : '");
 					return -1;
 			 	    }
 				    // Adjust offset of string pointer to beginning of
@@ -662,7 +672,8 @@ char* vlc_get_video_transcode()
 		fps = "25.0000";
 	} else {
 		canvas_height = "480";
-		fps = "29.9700";
+		//fps = "29.9700";
+		fps = "30.0000";
 	}
 
 	/* allow override of framerate */
